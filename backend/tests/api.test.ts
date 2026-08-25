@@ -1111,3 +1111,141 @@ describe("GET /api/protected (multi-layer)", () => {
     assert.equal(afterSnap.errorRequests - beforeSnap.errorRequests, 0);
   });
 });
+
+/* ------------------------------------------------------------------ */
+/* API key issuer (Part 9) — /api/keys, 10 per 5 minutes               */
+/* ------------------------------------------------------------------ */
+
+describe("API key issuer (/api/keys)", () => {
+  let app9: TestServer;
+  let limiter: RateLimiterInstance;
+  const KEY_MAX = 3; // tight limit so the flood test stays fast
+
+  before(async () => {
+    limiter = createRateLimiter({ max: 1000, windowMs: 60_000 });
+    app9 = await startServer(
+      createApp({
+        demoApiKey: TEST_KEY,
+        rateLimiter: limiter,
+        payloadMaxKb: 1,
+        timeoutMs: 300,
+        protectedRateLimit: { max: 3, windowSeconds: 1 },
+        keyIssueRateLimit: { max: KEY_MAX, windowSeconds: 1 },
+      }),
+    );
+  });
+
+  after(async () => {
+    await app9.close();
+  });
+
+  async function issueKey(): Promise<{ status: number; body: any; headers: Headers }> {
+    const res = await fetch(`${app9.baseUrl}/api/keys`, { method: "POST" });
+    return { status: res.status, body: await res.json(), headers: res.headers };
+  }
+
+  test("issuing a key returns the full value exactly once with a display prefix", async () => {
+    const { status, body } = await issueKey();
+
+    assert.equal(status, 201);
+    assert.equal(body.success, true);
+    assert.equal(body.message, "API key created");
+    assert.ok(body.data.key.startsWith("nxk_"), "key must use the nxk_ marker");
+    assert.ok(body.data.key.length > 30, "key must have real entropy");
+    assert.ok(body.data.prefix.includes("…"), "prefix is a display form");
+    assert.notEqual(body.data.prefix, body.data.key);
+    assert.match(String(body.data.warning), /shown once|not be shown again/i);
+  });
+
+  test("every issued key is unique", async () => {
+    const a = await issueKey();
+    const b = await issueKey();
+    assert.notEqual(a.body.data.key, b.body.data.key);
+    assert.notEqual(a.body.data.id, b.body.data.id);
+  });
+
+  test("issuance carries standard rate-limit headers", async () => {
+    const { headers } = await issueKey();
+    assert.notEqual(headers.get("x-ratelimit-limit"), null);
+    assert.notEqual(headers.get("x-ratelimit-remaining"), null);
+    assert.notEqual(headers.get("x-ratelimit-reset"), null);
+  });
+
+  test("exceeding the issuance quota gets a structured 429 with Retry-After", async () => {
+    // Burn whatever remains of this window.
+    for (let i = 0; i < KEY_MAX + 2; i++) {
+      await issueKey();
+    }
+    const { status, body } = await issueKey();
+
+    assert.equal(status, 429);
+    assert.equal(body.success, false);
+    assert.equal(body.error, "Rate limit exceeded");
+    assert.ok(Number.isFinite(body.retryAfter));
+    assert.ok(body.retryAfter >= 0);
+  });
+
+  test("the issuance window resets — unlimited keys over time", async () => {
+    // Wait out the 1s test window.
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+
+    const { status, body } = await issueKey();
+    assert.equal(status, 201);
+    assert.ok(body.data.key.startsWith("nxk_"));
+  });
+
+  test("listing shows metadata only — never full key values or hashes", async () => {
+    const created = await issueKey();
+    const fullKey = created.body.data.key as string;
+
+    const res = await fetch(`${app9.baseUrl}/api/keys`);
+    const rawText = await res.text();
+    const parsed = JSON.parse(rawText) as any;
+
+    assert.equal(res.status, 200);
+    assert.ok(parsed.count >= 1);
+    const listed = parsed.keys.find((k: any) => k.id === created.body.data.id);
+    assert.ok(listed, "the new key must be listed");
+    assert.ok(!rawText.includes(fullKey), "full values must never appear in listings");
+
+    const sample = parsed.keys[0];
+    for (const entry of parsed.keys) {
+      assert.ok(!("hash" in entry), "hashes must never be exposed");
+      assert.ok(!("key" in entry), "no full keys in list entries");
+    }
+    void sample;
+  });
+
+  test("issued keys authenticate on /api/auth alongside the configured demo key", async () => {
+    const created = await issueKey();
+    assert.equal(created.status, 201);
+    const minted = created.body.data.key as string;
+
+    const withMinted = await fetch(`${app9.baseUrl}/api/auth`, {
+      headers: { "X-API-Key": minted },
+    });
+    assert.equal(withMinted.status, 200);
+    const body = (await withMinted.json()) as any;
+    assert.equal(body.protection, "api-key");
+
+    // Demo key still works too.
+    const withDemo = await fetch(`${app9.baseUrl}/api/auth`, {
+      headers: { "X-API-Key": TEST_KEY },
+    });
+    assert.equal(withDemo.status, 200);
+
+    // Garbage still rejected with the generic body.
+    const bad = await fetch(`${app9.baseUrl}/api/auth`, {
+      headers: { "X-API-Key": "nxk_totally_fake" },
+    });
+    assert.equal(bad.status, 401);
+    assert.deepEqual(await bad.json(), { success: false, error: "Unauthorized" });
+  });
+
+  test("health reports the issuer configuration", async () => {
+    const { body } = await getJson<any>(app9.baseUrl, "/health");
+    assert.equal(body.keys.active, true);
+    assert.equal(body.keys.max, KEY_MAX);
+    assert.equal(body.keys.windowSeconds, 1);
+  });
+});

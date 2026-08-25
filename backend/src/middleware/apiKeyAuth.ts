@@ -29,9 +29,16 @@ function rejectUnauthorized(res: Response): void {
  * - Rejections are classified as blocked requests (not errors) via
  *   `res.locals.authBlocked`, mirroring the rate limiter contract.
  * - The key value itself is never logged or echoed back.
+ * - `keyVerifier` optionally accepts additional valid keys (e.g. keys minted
+ *   through the issuer at /api/keys) without widening the configured demo
+ *   secret itself.
  */
-export function createApiKeyAuth(options: { apiKey: string }): RequestHandler {
+export function createApiKeyAuth(options: {
+  apiKey: string;
+  keyVerifier?: (candidate: string) => boolean;
+}): RequestHandler {
   const expectedKey = options.apiKey;
+  const keyVerifier = options.keyVerifier;
 
   return (req: Request, res: Response, next: NextFunction): void => {
     const supplied = req.get(API_KEY_HEADER);
@@ -41,7 +48,7 @@ export function createApiKeyAuth(options: { apiKey: string }): RequestHandler {
       return;
     }
 
-    if (!secretsMatch(supplied, expectedKey)) {
+    if (!secretsMatch(supplied, expectedKey) && !(keyVerifier?.(supplied) ?? false)) {
       rejectUnauthorized(res);
       return;
     }

@@ -11,6 +11,7 @@ export interface NavEntry {
 export const NAV_MAIN: NavEntry[] = [
   { label: "Dashboard", path: "/", icon: "dashboard" },
   { label: "API Labs", path: "/labs", icon: "flask" },
+  { label: "Get API Key", path: "/get-api-key", icon: "key", tag: "Part 9" },
 ];
 
 export const NAV_MONITORING: NavEntry[] = [

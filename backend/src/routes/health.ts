@@ -11,6 +11,8 @@ export interface HealthRouterConfig {
   auth: AuthHealth;
   payloadMaxKb: number;
   timeoutMs: number;
+  keysMax: number;
+  keysWindowSeconds: number;
 }
 
 export function createHealthRouter(config: HealthRouterConfig): Router {
@@ -28,6 +30,11 @@ export function createHealthRouter(config: HealthRouterConfig): Router {
       auth: config.auth,
       payload: { active: true, maxKb: config.payloadMaxKb },
       timeout: { active: true, timeoutMs: config.timeoutMs },
+      keys: {
+        active: true,
+        max: config.keysMax,
+        windowSeconds: config.keysWindowSeconds,
+      },
     };
     res.set("Cache-Control", "no-store");
     res.json(body);

@@ -154,3 +154,23 @@
 - Persistence for logs/metrics (SQLite or similar)
 - Analytics charts computed from recorded traffic
 - Optional light theme
+
+## Part 9 - API Key Issuer ?
+
+- [x] New "Get API Key" dashboard tab (`/get-api-key`)
+- [x] `POST /api/keys` mints cryptographically random keys (`nxk_` + 48 hex)
+      with display-once semantics: full value returned only in the creation
+      response; backend stores SHA-256 hash + prefix exclusively
+- [x] Unlimited total keys; issuance throttled by its own limiter
+      (`KEY_ISSUE_MAX` / `KEY_ISSUE_WINDOW_SECONDS`, default 10 per 5 min),
+      standard structured 429 + Retry-After when exceeded
+- [x] Minted keys authenticate on `/api/auth` (and therefore `/api/protected`)
+      alongside the configured demo key via a verifier hook
+- [x] `GET /api/keys` lists metadata only — never secrets or hashes
+- [x] `/health` reports the issuer configuration honestly
+      (`keys: {active, max, windowSeconds}`)
+- [x] UI: generate button, live remaining-quota meter from X-RateLimit
+      headers, copy-once reveal box, cooldown countdown after 429,
+      issued-keys table
+- [x] Test suite expanded to 73 tests (uniqueness, quota flood, window
+      reset, listing leak-safety, auth integration, health reporting)

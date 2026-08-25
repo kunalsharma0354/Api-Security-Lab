@@ -58,6 +58,7 @@ export type IconName =
   | "alert"
   | "timer"
   | "server"
+  | "key"
   | "info";
 
 /* ---------- Backend contracts (Part 2) ---------- */
@@ -83,6 +84,12 @@ export interface TimeoutHealth {
   timeoutMs: number;
 }
 
+export interface KeysHealth {
+  active: boolean;
+  max: number;
+  windowSeconds: number;
+}
+
 export interface HealthInfo {
   status: "ok";
   service: string;
@@ -92,6 +99,7 @@ export interface HealthInfo {
   auth?: AuthHealth;
   payload?: PayloadHealth;
   timeout?: TimeoutHealth;
+  keys?: KeysHealth;
 }
 
 export interface DemoResponse {
@@ -224,6 +232,38 @@ export interface ProtectedResponse {
     requestId: string;
     layersPassed: string[];
   };
+}
+
+/** Creation response — the ONLY place a full key value ever appears. */
+export interface KeyCreatedResponse {
+  success: true;
+  message: string;
+  protection: "rate-limit";
+  data: {
+    endpoint: string;
+    method: string;
+    processedAt: string;
+    requestId: string;
+    id: string;
+    name: string;
+    prefix: string;
+    key: string;
+    createdAt: string;
+    warning: string;
+  };
+}
+
+export interface ApiKeyMeta {
+  id: string;
+  prefix: string;
+  createdAt: string;
+}
+
+export interface KeyListResponse {
+  success: true;
+  message: string;
+  count: number;
+  keys: ApiKeyMeta[];
 }
 
 export interface MetricsSnapshot {

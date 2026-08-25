@@ -53,6 +53,11 @@ export const env = {
     max: readPositiveInt("PROTECTED_RATE_LIMIT_MAX", 5),
     windowSeconds: readPositiveInt("PROTECTED_RATE_LIMIT_WINDOW_SECONDS", 60),
   },
+  /** Key issuer: unlimited keys, throttled issuance. */
+  keyIssue: {
+    max: readPositiveInt("KEY_ISSUE_MAX", 10),
+    windowSeconds: readPositiveInt("KEY_ISSUE_WINDOW_SECONDS", 300),
+  },
 } as const;
 
 export type Env = typeof env;

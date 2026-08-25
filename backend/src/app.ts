@@ -16,6 +16,8 @@ import { validationRouter } from "./routes/validation";
 import { createPayloadRouter } from "./routes/payload";
 import { createTimeoutRouter } from "./routes/timeout";
 import { createProtectedRouter } from "./routes/protected";
+import { createKeysRouter } from "./routes/keys";
+import { keysService } from "./services/keysService";
 import {
   authNotConfiguredHandler,
   createAuthRouter,
@@ -36,6 +38,8 @@ export interface AppOptions {
   timeoutMs?: number;
   /** Protected-lab limiter overrides (tests use tight/fast windows). */
   protectedRateLimit?: { max?: number; windowSeconds?: number };
+  /** Key-issuer limiter overrides (default 10 per 5 minutes). */
+  keyIssueRateLimit?: { max?: number; windowSeconds?: number };
 }
 
 function createDefaultRateLimiter(): RateLimiterInstance {
@@ -64,6 +68,12 @@ export function createApp(options: AppOptions = {}): Express {
     windowMs:
       (options.protectedRateLimit?.windowSeconds ??
         env.protectedRateLimit.windowSeconds) * 1000,
+  });
+  const keysLimiter = createRateLimiter({
+    max: options.keyIssueRateLimit?.max ?? env.keyIssue.max,
+    windowMs:
+      (options.keyIssueRateLimit?.windowSeconds ?? env.keyIssue.windowSeconds) *
+      1000,
   });
 
   const app = express();
@@ -108,6 +118,8 @@ export function createApp(options: AppOptions = {}): Express {
       auth: { active: authConfigured },
       payloadMaxKb: Math.round(payloadMaxBytes / 1024),
       timeoutMs,
+      keysMax: keysLimiter.options.max,
+      keysWindowSeconds: Math.round(keysLimiter.options.windowMs / 1000),
     }),
   );
   app.use("/api/demo", demoRouter);
@@ -126,9 +138,16 @@ export function createApp(options: AppOptions = {}): Express {
   app.use(
     "/api/auth",
     createAuthRouter(
-      authConfigured ? createApiKeyAuth({ apiKey: demoApiKey as string }) : authNotConfiguredHandler(),
+      authConfigured
+        ? createApiKeyAuth({
+            apiKey: demoApiKey as string,
+            // Keys minted via /api/keys authenticate here too.
+            keyVerifier: (candidate) => keysService.verify(candidate),
+          })
+        : authNotConfiguredHandler(),
     ),
   );
+  app.use("/api/keys", createKeysRouter({ limiter: keysLimiter }));
   app.use("/api/metrics", metricsRouter);
   app.use("/api/logs", logsRouter);
 

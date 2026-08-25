@@ -6,6 +6,7 @@ import { RequestLogsPage } from "./pages/RequestLogsPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { ApiDocsPage } from "./pages/ApiDocsPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { GetApiKeyPage } from "./pages/GetApiKeyPage";
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
         <Route element={<MainLayout />}>
           <Route index element={<DashboardPage />} />
           <Route path="labs" element={<ApiLabsPage />} />
+          <Route path="get-api-key" element={<GetApiKeyPage />} />
           <Route path="logs" element={<RequestLogsPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="docs" element={<ApiDocsPage />} />

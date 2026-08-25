@@ -92,6 +92,14 @@ const PATHS: Record<IconName, JSX.Element> = {
       <path d="M7 16.5h.01" />
     </>
   ),
+  key: (
+    <>
+      <circle cx="7.5" cy="15.5" r="4.5" />
+      <path d="m11 12 9-9" />
+      <path d="m16.5 6.5 3 3" />
+      <path d="m13.5 9.5 2.5 2.5" />
+    </>
+  ),
   info: (
     <>
       <circle cx="12" cy="12" r="9" />

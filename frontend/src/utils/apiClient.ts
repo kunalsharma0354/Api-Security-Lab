@@ -3,6 +3,8 @@ import type {
   AuthResponse,
   DemoResponse,
   HealthInfo,
+  KeyCreatedResponse,
+  KeyListResponse,
   LogsResponse,
   MetricsSnapshot,
   PayloadResponse,
@@ -205,6 +207,15 @@ export const api = {
       "/api/protected",
       apiKey ? { "X-API-Key": apiKey } : {},
     ),
+  /**
+   * Key issuer. Unlimited keys over time, but issuance itself is throttled
+   * (10 per 5 minutes by default) — the X-RateLimit headers on the envelope
+   * show the remaining quota for this window.
+   */
+  createKey: () =>
+    request<KeyCreatedResponse>("/api/keys", {}, { method: "POST" }),
+  /** Metadata list of issued keys — full values are never returned here. */
+  listKeys: () => request<KeyListResponse>("/api/keys"),
   metrics: () => request<MetricsSnapshot>("/api/metrics"),
   logs: (limit = 25) => request<LogsResponse>(`/api/logs?limit=${limit}`),
 };
