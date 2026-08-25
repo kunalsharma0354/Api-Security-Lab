@@ -18,7 +18,7 @@ const app = createApp();
 const server = app.listen(env.port, () => {
   console.log(`[nexora] backend listening on http://localhost:${env.port}`);
   console.log(`[nexora] environment: ${env.nodeEnv}`);
-  console.log(`[nexora] CORS origin:   ${env.frontendOrigin}`);
+  console.log(`[nexora] CORS origins:  ${env.frontendOrigins.join(", ")}`);
   console.log("[nexora] auth lab:      configured");
 });
 

@@ -15,8 +15,19 @@ import type {
   ValidationResponse,
 } from "../types";
 
+const DEFAULT_LOCAL_API = "http://localhost:3001";
+const DEFAULT_DEPLOYED_API = "https://nexoralabbackend.vercel.app";
+
+/**
+ * API base URL resolution:
+ * 1. Explicit VITE_API_BASE_URL always wins (set it in Vercel env vars to
+ *    point the deployed frontend at any backend).
+ * 2. `vite dev` (import.meta.env.DEV) talks to the local backend.
+ * 3. A production build defaults to the deployed NEXORA backend.
+ */
 export const API_BASE_URL: string =
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3001";
+  import.meta.env.VITE_API_BASE_URL ??
+  (import.meta.env.DEV ? DEFAULT_LOCAL_API : DEFAULT_DEPLOYED_API);
 
 export const BACKEND_OFFLINE_MESSAGE =
   "Unable to connect to NEXORA API backend.\nMake sure the backend server is running on port 3001.";

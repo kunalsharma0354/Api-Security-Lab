@@ -83,7 +83,14 @@ export function createApp(options: AppOptions = {}): Express {
   app.use(
     cors({
       origin(origin, callback) {
-        if (!origin || origin === env.frontendOrigin) {
+        const normalized = origin?.replace(/\/+$/, "") ?? null;
+        if (
+          !normalized ||
+          env.frontendOrigins.some(
+            (allowed) =>
+              allowed.toLowerCase() === normalized.toLowerCase(),
+          )
+        ) {
           callback(null, true);
         } else {
           callback(null, false);

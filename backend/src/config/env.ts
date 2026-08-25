@@ -33,7 +33,18 @@ export const env = {
   nodeEnv,
   isDevelopment: nodeEnv === "development",
   port: readPort("PORT", 3001),
-  frontendOrigin: process.env.FRONTEND_ORIGIN ?? "http://localhost:5173",
+  /**
+   * Comma-separated allow-list of browser origins that may call this API
+   * (local dev + the deployed Vercel frontend). Trailing slashes and case
+   * are ignored at comparison time.
+   */
+  frontendOrigins: (
+    process.env.FRONTEND_ORIGIN ??
+    "http://localhost:5173,https://nexoralab-phi.vercel.app"
+  )
+    .split(",")
+    .map((value) => value.trim().replace(/\/+$/, ""))
+    .filter((value) => value.length > 0),
   rateLimit: {
     max: readPositiveInt("RATE_LIMIT_MAX", 10),
     windowSeconds: readPositiveInt("RATE_LIMIT_WINDOW_SECONDS", 60),
