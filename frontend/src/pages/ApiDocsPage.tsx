@@ -204,6 +204,127 @@ X-RateLimit-Remaining: 0
         </div>
       </section>
 
+      <section className="card" aria-label="Request size protection reference">
+        <div className="panel-head">
+          <h3 className="panel-title">Spotlight · Request Size Protection</h3>
+          <span className="section-note">POST /api/payload</span>
+        </div>
+        <div className="docs-body">
+          <div className="meta-row docs-meta-row">
+            <span className="meta-label">Protection</span>
+            <Badge label="REQUEST SIZE" tone="protection" dot={false} />
+          </div>
+          <div className="meta-row docs-meta-row">
+            <span className="meta-label">Limit</span>
+            <code className="endpoint-code">64 KB per request body</code>
+          </div>
+          <div className="meta-row docs-meta-row">
+            <span className="meta-label">Success</span>
+            <Badge label="200 OK" tone="ready" dot={false} />
+          </div>
+          <div className="meta-row docs-meta-row">
+            <span className="meta-label">Too Large</span>
+            <Badge label="413 Payload Too Large" tone="warning" dot={false} />
+          </div>
+
+          <h4 className="docs-subtitle">Rejected body · 413</h4>
+          <pre className="code-block">{`HTTP/1.1 413 Payload Too Large
+
+{
+  "success": false,
+  "error": "Request body too large",
+  "limitBytes": 65536
+}`}</pre>
+
+          <p className="docs-note">
+            Oversized requests are refused before the body is read when the{" "}
+            <code>Content-Length</code> header already exceeds the limit, and
+            by a scoped parser ceiling as defense in depth. Rejections count as
+            blocked, byte counts are logged instead of contents, and malformed
+            JSON gets the same structured treatment.
+          </p>
+        </div>
+      </section>
+
+      <section className="card" aria-label="Timeout protection reference">
+        <div className="panel-head">
+          <h3 className="panel-title">Spotlight · Timeout Protection</h3>
+          <span className="section-note">GET /api/timeout</span>
+        </div>
+        <div className="docs-body">
+          <div className="meta-row docs-meta-row">
+            <span className="meta-label">Protection</span>
+            <Badge label="TIMEOUT" tone="protection" dot={false} />
+          </div>
+          <div className="meta-row docs-meta-row">
+            <span className="meta-label">Deadline</span>
+            <code className="endpoint-code">2000 ms (env-configurable)</code>
+          </div>
+          <div className="meta-row docs-meta-row">
+            <span className="meta-label">Terminated</span>
+            <Badge label="504 Gateway Timeout" tone="warning" dot={false} />
+          </div>
+
+          <h4 className="docs-subtitle">Cut-off response · 504</h4>
+          <pre className="code-block">{`HTTP/1.1 504 Gateway Timeout
+
+{
+  "success": false,
+  "error": "Request timed out",
+  "timeoutMs": 2000
+}`}</pre>
+
+          <p className="docs-note">
+            The endpoint deliberately simulates slow upstream work; when it
+            exceeds the deadline the server terminates it with a structured{" "}
+            <code>504</code>. Timeouts count as blocked, appear in logs with
+            their real latency, and never hang the client.
+          </p>
+        </div>
+      </section>
+
+      <section className="card" aria-label="Multi-layer protection reference">
+        <div className="panel-head">
+          <h3 className="panel-title">Spotlight · Multi-Layer Protection</h3>
+          <span className="section-note">GET /api/protected</span>
+        </div>
+        <div className="docs-body">
+          <div className="meta-row docs-meta-row">
+            <span className="meta-label">Layers</span>
+            <Badge label="RATE LIMIT + API KEY" tone="protection" dot={false} />
+          </div>
+          <div className="meta-row docs-meta-row">
+            <span className="meta-label">Shield</span>
+            <code className="endpoint-code">5 requests / 60 s (dedicated)</code>
+          </div>
+          <div className="meta-row docs-meta-row">
+            <span className="meta-label">Pass</span>
+            <Badge label="200 OK" tone="ready" dot={false} />
+          </div>
+          <div className="meta-row docs-meta-row">
+            <span className="meta-label">Blocked</span>
+            <Badge label="401 / 429" tone="warning" dot={false} />
+          </div>
+
+          <h4 className="docs-subtitle">Layered success · 200</h4>
+          <pre className="code-block">{`HTTP/1.1 200 OK
+
+{
+  "success": true,
+  "message": "Multi-layer protected request processed",
+  "protection": "multi-layer",
+  "layers": ["rate-limit", "api-key"]
+}`}</pre>
+
+          <p className="docs-note">
+            Layers stack in DoS-first order: the dedicated strict rate limiter
+            runs before key checks, so floods hit <code>429</code> even with
+            bad keys — exactly how a real edge shield behaves. The shield has
+            its own window, fully isolated from the rate-limit lab.
+          </p>
+        </div>
+      </section>
+
       <div className="section-head">
         <h2 className="section-title">All Lab Endpoints</h2>
         <span className="section-note">Base URL · http://localhost:3001</span>

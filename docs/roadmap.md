@@ -1,6 +1,6 @@
 ﻿# Roadmap
 
-## Part 1 â€” Foundation & UI âœ…
+## Part 1 — Foundation & UI ✅
 
 - Project structure (`frontend/`, `backend/`, `docs/`, `tests/`)
 - Dark developer-tool design system (CSS tokens, responsive layout)
@@ -11,13 +11,13 @@
 - Placeholder pages: API Labs, Request Logs, Analytics, API Documentation,
   Settings
 
-## Part 2 â€” Backend Foundation + First APIs âœ… (current)
+## Part 2 — Backend Foundation + First APIs ✅
 
 - [x] Express + TypeScript server (`backend/src`), dotenv configuration
 - [x] CORS locked to the local frontend origin
 - [x] `GET /health` with service metadata + server timestamp
-- [x] `GET /api/demo` â€” baseline unprotected endpoint (always 200)
-- [x] Request logging middleware â€” method, path, status, latency; no secrets
+- [x] `GET /api/demo` — baseline unprotected endpoint (always 200)
+- [x] Request logging middleware — method, path, status, latency; no secrets
 - [x] In-memory metrics service (total / successful / error / blocked / avg)
 - [x] `GET /api/metrics` returning real counters (zeros when empty)
 - [x] `GET /api/logs?limit=n` recent-request feed
@@ -30,18 +30,18 @@
 - [x] Remaining six cards clearly marked "Coming in Part 3"
 - [x] Backend test suite: 9 tests via `node --test` + tsx
 
-## Part 3 â€” Rate Limiting âœ… (current)
+## Part 3 — Rate Limiting ✅
 
 - [x] Validated env config: `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_SECONDS`
 - [x] Reusable fixed-window `rateLimiter` middleware (per-IP, in-memory,
       tracks count/window-start/reset; factory + `reset()` for test isolation)
-- [x] `GET /api/rate-limit` â€” the only protected endpoint
+- [x] `GET /api/rate-limit` — the only protected endpoint
       (10 requests / 60 s by default)
 - [x] Standard headers on responses:
       `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
-- [x] Limit exceeded â†’ `429` JSON `{ success, error, retryAfter }` with a
+- [x] Limit exceeded → `429` JSON `{ success, error, retryAfter }` with a
       real window-derived `Retry-After` header (no fake values)
-- [x] Blocked requests increment `blockedRequests` â€” recorded as blocked,
+- [x] Blocked requests increment `blockedRequests` — recorded as blocked,
       not as generic errors (`Errors` stays truthful)
 - [x] `/api/demo` remains completely unprotected (verified by tests)
 - [x] Frontend Rate Limited card: live limit/requests/remaining/reset UI,
@@ -54,7 +54,7 @@
 - [x] Test suite expanded to 15 tests: within-limit, exceeded, headers,
       metrics deltas, logs contain 429s, demo isolation, window reset
 
-## Part 4 â€” API Key Authentication âœ… (current)
+## Part 4 — API Key Authentication ✅
 
 - [x] `DEMO_API_KEY` env config; server refuses to start with a clear
       configuration error when the key is missing (auth lab is enabled)
@@ -62,7 +62,7 @@
       invalid keys get the identical generic `401 { success:false,
       error:"Unauthorized" }`; timing-safe hash comparison
 - [x] `GET /api/auth` is the ONLY protected endpoint
-- [x] Valid key â†’ `200 { success:true, message:"Authenticated API request
+- [x] Valid key → `200 { success:true, message:"Authenticated API request
       processed", protection:"api-key" }`
 - [x] Key never exposed: not in `/health`, `/api/metrics`, `/api/logs`,
       frontend source or docs examples (`X-API-Key: YOUR_API_KEY`
@@ -80,18 +80,18 @@
 - [x] Test suite expanded to 26 tests (valid/missing/invalid keys, metric
       deltas, log redaction incl. console capture, isolation)
 
-## Part 5 â€” Input Validation âœ… (current)
+## Part 5 — Input Validation ✅
 
 - [x] `POST /api/validate` accepts `application/json` with exactly
       `{ name, email, age }`
 - [x] Reusable `validateRegistration` middleware: name required text of
-      2â€“100 chars (trimmed), email valid address â‰¤254 chars, age integer
-      13â€“120; every problem collected and reported at once
+      2—100 chars (trimmed), email valid address â‰¤254 chars, age integer
+      13—120; every problem collected and reported at once
 - [x] Structured rejection: `400 { success:false, error:"Validation failed",
-      fields:{ field: message } }` â€” one entry per rejected field
+      fields:{ field: message } }` — one entry per rejected field
 - [x] Unknown fields rejected (`Unexpected field "admin"`) instead of being
       silently ignored; arrays/non-object bodies rejected too
-- [x] Malformed JSON on the lab route â†’ the same structured validation
+- [x] Malformed JSON on the lab route → the same structured validation
       error via a scoped body-parser + `malformedJsonBlocker`, ordered so
       blocked responses are still logged and counted
 - [x] Accepted payloads sanitized (name trimmed) before the handler echoes
@@ -100,7 +100,7 @@
       submitted values never appear in logs or metrics
 - [x] Frontend validation card: JSON editor with safe one-click presets
       (Valid Input / Invalid Email / Invalid Age / Missing Name /
-      Unknown Field â€” replace contents only, never auto-send), frontend
+      Unknown Field — replace contents only, never auto-send), frontend
       JSON syntax feedback before sending, VALIDATED / VALIDATION BLOCKED
       states with per-field breakdown, chip shows `400 BLOCKED`
 - [x] Docs spotlight for the validation endpoint with example request,
@@ -111,16 +111,46 @@
       multi-error collection, unknown fields, malformed JSON, metric
       deltas, log leak checks, isolation)
 
-## Part 6+ â€” Remaining Protections (next)
+## Part 6 — Request Size Protection ✅
 
-- [ ] `POST /api/payload` â€” request body size rejection (413)
-- [ ] `GET /api/timeout` â€” slow handler terminated by timeout (504)
-- [ ] `GET /api/protected` â€” layered combination of the above
-- [ ] Wire remaining cards through the existing lab-runner mechanism
+- [x] `POST /api/payload` with `PAYLOAD_MAX_KB` config (default 64 KB)
+- [x] Early refusal: `Content-Length` above the limit → structured `413`
+      before a single body byte is read
+- [x] Defense in depth: scoped parser ceiling + blocker converts body-parser
+      `entity.too.large` failures into the same structured envelope
+- [x] Malformed JSON / non-object bodies on this route get the structured
+      validation error via the scoped chain
+- [x] Byte counts only (`limitBytes`, `receivedBytes`) — contents are never
+      echoed or logged; rejections count as blocked, never errors
+- [x] `/health` reports the real limit; frontend payload editor gains a
+      Small/Oversized (~80 KB) preset pair and ACCEPTED vs REQUEST BLOCKED
+      states, plus a live status row
 
-## Later Parts
+## Part 7 — Timeout Protection ✅
+
+- [x] `GET /api/timeout` with a `TIMEOUT_MS` deadline (default 2000)
+- [x] Deadline wrapper terminates simulated slow work (3 s) with a
+      structured `504 { success:false, error:"Request timed out",
+      timeoutMs }`; late completion is ignored after headers were sent
+- [x] Cut-off verified to land at the deadline via elapsed-time assertions;
+      timeouts count as blocked and appear in logs as real 504 entries
+
+## Part 8 — Multi-Layer Protection ✅
+
+- [x] `GET /api/protected` stacks layers in DoS-first order: a dedicated
+      strict limiter (`PROTECTED_RATE_LIMIT_*`, default 5 / 60 s) runs
+      before API-key auth, so floods of bad keys get `429`, not `401`
+- [x] Shield window fully isolated from the main rate-limit lab instance
+- [x] Success echoes `layers: ["rate-limit","api-key"]`; every attempt
+      consumes shield quota like a real edge shield
+- [x] UI: shared key input + "Send 6 Requests (Flood Shield)" burst button,
+      AUTHORIZED block listing each layer passed
+- [x] Test suite expanded to 65 tests (size guard incl. lying
+      Content-Length via raw sockets, deadline timing, layer order,
+      shield isolation, metric bucket integrity)
+
+## Future Ideas
 
 - Persistence for logs/metrics (SQLite or similar)
 - Analytics charts computed from recorded traffic
-- Expanded automated tests in `tests/`
 - Optional light theme

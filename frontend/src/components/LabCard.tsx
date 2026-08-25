@@ -126,7 +126,9 @@ export function LabCard({
     outcome &&
     outcome.kind !== "error" &&
     outcome.kind !== "unauthorized" &&
-    outcome.kind !== "invalid"
+    outcome.kind !== "invalid" &&
+    outcome.kind !== "too-large" &&
+    outcome.kind !== "timeout"
       ? outcome.rateLimit
       : undefined;
   const retryAfter =
@@ -145,6 +147,7 @@ export function LabCard({
   const rlBoxInfo = rateLimitInfo ?? staticInfo;
   const isAuthLab = lab.id === "auth";
   const isValidateLab = lab.id === "validate";
+  const isProtectedLab = lab.id === "protected";
 
   /**
    * Educational headline blocks for protection outcomes. The backend is the
@@ -152,9 +155,21 @@ export function LabCard({
    */
   const alertBlock = (() => {
     if (!outcome) return null;
-    if (isAuthLab) {
+    if (isAuthLab || isProtectedLab) {
       if (outcome.kind === "success") {
-        return { tone: "ok", title: "AUTHORIZED", lines: [outcome.message], fields: null };
+        const layers =
+          isProtectedLab
+            ? ((outcome.payload as { layers?: string[] } | undefined)?.layers ?? [])
+            : [];
+        return {
+          tone: "ok",
+          title: "AUTHORIZED",
+          lines: [
+            `HTTP ${outcome.httpStatus}`,
+            ...layers.map((layer) => `✓ ${layer} passed`),
+          ],
+          fields: null,
+        };
       }
       if (outcome.kind === "unauthorized") {
         return {
@@ -162,7 +177,9 @@ export function LabCard({
           title: "UNAUTHORIZED",
           lines: [
             `HTTP ${outcome.httpStatus}`,
-            outcome.reason === "missing" ? "API key required" : "Request rejected",
+            outcome.reason === "missing"
+              ? "API key required"
+              : "Request rejected",
           ],
           fields: null,
         };
@@ -180,6 +197,52 @@ export function LabCard({
           lines: [`HTTP ${outcome.httpStatus}`, outcome.message],
           fields: outcome.fields,
         };
+      }
+      return null;
+    }
+    if (lab.id === "payload") {
+      if (outcome.kind === "success") {
+        return { tone: "ok", title: "ACCEPTED", lines: ["HTTP 200", outcome.message], fields: null };
+      }
+      if (outcome.kind === "invalid") {
+        return {
+          tone: "blocked",
+          title: "REJECTED",
+          lines: [`HTTP ${outcome.httpStatus}`, outcome.message],
+          fields: outcome.fields,
+        };
+      }
+      if (outcome.kind === "too-large") {
+        return {
+          tone: "blocked",
+          title: "REQUEST BLOCKED",
+          lines: [
+            `HTTP ${outcome.httpStatus}`,
+            outcome.limitBytes !== undefined
+              ? `Limit ${Math.round(outcome.limitBytes / 1024)} KB exceeded`
+              : "Body exceeds the size limit",
+          ],
+          fields: null,
+        };
+      }
+      return null;
+    }
+    if (lab.id === "timeout") {
+      if (outcome.kind === "timeout") {
+        return {
+          tone: "blocked",
+          title: "REQUEST TERMINATED",
+          lines: [
+            `HTTP ${outcome.httpStatus}`,
+            outcome.timeoutMs !== undefined
+              ? `Cut off at ${outcome.timeoutMs} ms deadline`
+              : "Exceeded the server deadline",
+          ],
+          fields: null,
+        };
+      }
+      if (outcome.kind === "success") {
+        return { tone: "ok", title: "COMPLETED IN TIME", lines: ["HTTP 200", outcome.message], fields: null };
       }
       return null;
     }
@@ -337,9 +400,11 @@ export function LabCard({
                   ? `${outcome.httpStatus} BLOCKED`
                   : outcome.kind === "unauthorized"
                     ? `${outcome.httpStatus} REJECTED`
-                    : outcome.kind === "invalid"
+                    : outcome.kind === "invalid" || outcome.kind === "too-large"
                       ? `${outcome.httpStatus} BLOCKED`
-                      : `${outcome.httpStatus} OK`}
+                      : outcome.kind === "timeout"
+                        ? `${outcome.httpStatus} TERMINATED`
+                        : `${outcome.httpStatus} OK`}
             </span>
             <span className="result-latency">
               {outcome.latencyMs !== null ? `${outcome.latencyMs} ms` : "-- ms"}

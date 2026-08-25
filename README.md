@@ -4,13 +4,13 @@ A professional, local-first educational dashboard for learning how common
 API protection mechanisms behave — rate limiting, API key authentication,
 input validation, request size limits, timeouts and layered defenses.
 
-> **Status: Part 5 complete — input validation implemented and wired.**
-> Payload protection, timeout protection and multi-layer protection arrive
-> in later parts.
+> **Status: All 7 lab modules live** — rate limiting, API key authentication,
+> input validation, request size protection, timeout protection and the
+> multi-layer combination are implemented and wired end-to-end.
 
 ---
 
-## Current State (Part 5)
+## Current State (Part 8)
 
 | Area | Status |
 | --- | --- |
@@ -37,8 +37,15 @@ input validation, request size limits, timeouts and layered defenses.
 | Malformed JSON → structured validation error on the lab route | Done |
 | Sanitized echo of accepted payloads (trimmed name) | Done |
 | Frontend: validation card with JSON editor + safe presets | Done |
-| Backend tests: 46 tests incl. validation, leak & isolation checks | Done |
-| Payload / timeout / multi-layer | Later parts |
+| **Request size protection on `POST /api/payload` (413)** | **Done** |
+| Early Content-Length refusal + scoped parser ceiling | Done |
+| **Timeout protection on `GET /api/timeout` (504)** | **Done** |
+| Deadline cut-off with structured response; blocked-not-error | Done |
+| **Multi-layer protection on `GET /api/protected`** | **Done** |
+| Dedicated strict shield + API-key stacked in DoS-first order | Done |
+| Frontend: payload editor w/ oversized preset, timeout & flood UIs | Done |
+| Backend tests: 65 tests incl. leak, metric & isolation checks | Done |
+| Persistence / analytics charts / SQLite | Future ideas |
 
 No third-party APIs are called, no synthetic results are displayed, and
 counters only reflect requests that actually happened against the local
@@ -94,6 +101,9 @@ Frontend (`cd frontend`): `dev`, `build`, `preview`, `typecheck`.
 | GET | `/api/rate-limit` | Fixed-window rate-limited API (10 req / 60 s by default) |
 | GET | `/api/auth` | API-key protected API — requires `X-API-Key` header |
 | POST | `/api/validate` | Strict input validation — rejects bad payloads with per-field errors |
+| POST | `/api/payload` | Request size protection — oversized bodies get structured 413 |
+| GET | `/api/timeout` | Timeout protection — slow work cut off with structured 504 |
+| GET | `/api/protected` | Multi-layer: dedicated strict rate limiter + API-key auth |
 | GET | `/api/metrics` | Real in-memory counters (total/success/error/blocked/avg latency) |
 | GET | `/api/logs?limit=25` | Most recent recorded requests |
 
@@ -121,6 +131,24 @@ ignored, and malformed JSON gets the same structured treatment. Accepted
 payloads are sanitized before echoing. Rejected requests count as blocked,
 and submitted values never appear in logs or metrics.
 
+Request size protection: `POST /api/payload` accepts `application/json`
+bodies up to `PAYLOAD_MAX_KB` (default 64 KB). Oversized requests are
+refused **before the body is read** when `Content-Length` already exceeds
+the limit, and by a scoped parser ceiling as defense in depth:
+`413 { success:false, error:"Request body too large", limitBytes }`.
+Only byte counts are recorded — never body contents.
+
+Timeout protection: `GET /api/timeout` deliberately simulates slow upstream
+work; when it exceeds `TIMEOUT_MS` (default 2000) the server cuts it off
+with `504 { success:false, error:"Request timed out", timeoutMs }`. The
+client never hangs and timeouts count as blocked, not errors.
+
+Multi-layer protection: `GET /api/protected` stacks a dedicated strict
+rate limiter (`PROTECTED_RATE_LIMIT_*`, default 5 / 60 s) **before** API-key
+auth — DoS-first ordering, so floods hit `429` even with bad keys. The
+shield's window is fully isolated from the rate-limit lab. Success echoes
+the layers passed: `{ layers: ["rate-limit","api-key"] }`.
+
 Errors always return JSON: `{ "success": false, "error": "…" }`.
 Metrics exclude observability traffic (`/health`, `/api/metrics`,
 `/api/logs`) so counters only count lab activity.
@@ -138,6 +166,10 @@ NODE_ENV=development
 RATE_LIMIT_MAX=10
 RATE_LIMIT_WINDOW_SECONDS=60
 DEMO_API_KEY=nexora_demo_key_change_me
+PAYLOAD_MAX_KB=64
+TIMEOUT_MS=2000
+PROTECTED_RATE_LIMIT_MAX=5
+PROTECTED_RATE_LIMIT_WINDOW_SECONDS=60
 ```
 
 Rate-limit values are validated at startup (positive integers) and reported
@@ -183,9 +215,9 @@ nexora-api-security-lab/
 | 2 | Rate Limited API | `GET /api/rate-limit` | RATE LIMIT | **Live** |
 | 3 | API Key Authentication | `GET /api/auth` | API KEY | **Live** |
 | 4 | Input Validation | `POST /api/validate` | INPUT VALIDATION | **Live** |
-| 5 | Request Size Protection | `POST /api/payload` | REQUEST SIZE | Later part |
-| 6 | Timeout Protection | `GET /api/timeout` | TIMEOUT | Later part |
-| 7 | Multi-Layer Protected API | `GET /api/protected` | MULTI-LAYER | Later part |
+| 5 | Request Size Protection | `POST /api/payload` | REQUEST SIZE | **Live** |
+| 6 | Timeout Protection | `GET /api/timeout` | TIMEOUT | **Live** |
+| 7 | Multi-Layer Protected API | `GET /api/protected` | MULTI-LAYER | **Live** |
 
 ## Roadmap
 
@@ -212,7 +244,20 @@ nexora-api-security-lab/
   (replace-only, never auto-sent) plus frontend JSON syntax feedback,
   VALIDATED/VALIDATION BLOCKED states, docs spotlight, test suite
   expanded to 46 tests.
-- **Later parts** — payload size, timeout protection, multi-layer
-  combination, persistence, analytics.
+- **Part 6 (done)** — request size protection on `POST /api/payload`:
+  early Content-Length refusal before the body is read, scoped parser
+  ceiling as defense in depth, structured `413` with byte counts only,
+  oversized-preset in the payload editor, payload/timeout config reported
+  by `/health`.
+- **Part 7 (done)** — timeout protection on `GET /api/timeout`: deadline
+  wrapper terminates simulated slow work with a structured `504`, cut-off
+  happens at the deadline (client never hangs), timeouts count as blocked.
+- **Part 8 (done)** — multi-layer protection on `GET /api/protected`:
+  dedicated strict rate limiter stacked **before** API-key auth
+  (DoS-first order, flood of bad keys gets 429), shield window isolated
+  from the main lab limiter, "Send 6 Requests" flood button in the UI,
+  layers echoed on success. Test suite expanded to 65 tests.
+- **Future ideas** — persistence for logs/metrics, analytics charts,
+  SQLite storage.
 
 See [`docs/roadmap.md`](docs/roadmap.md) for details.

@@ -9,6 +9,16 @@ export interface AuthHealth {
   active: boolean;
 }
 
+export interface PayloadHealth {
+  active: boolean;
+  maxKb: number;
+}
+
+export interface TimeoutHealth {
+  active: boolean;
+  timeoutMs: number;
+}
+
 export interface HealthResponse {
   status: "ok";
   service: string;
@@ -16,6 +26,8 @@ export interface HealthResponse {
   timestamp: string;
   rateLimiter: RateLimiterHealth;
   auth: AuthHealth;
+  payload: PayloadHealth;
+  timeout: TimeoutHealth;
 }
 
 export interface DemoResponse {
@@ -87,6 +99,64 @@ export interface ValidationErrorResponse {
   success: false;
   error: "Validation failed";
   fields: Record<string, string>;
+}
+
+export interface PayloadResponse {
+  success: true;
+  message: string;
+  protection: "request-size";
+  data: {
+    endpoint: string;
+    method: string;
+    processedAt: string;
+    requestId: string;
+    sizeBytes: number;
+    maxBytes: number;
+    fieldsReceived: number;
+    keys: string[];
+  };
+}
+
+/** Structured 413 body — byte counts only, never body contents. */
+export interface PayloadTooLargeResponse {
+  success: false;
+  error: "Request body too large";
+  limitBytes: number;
+  receivedBytes?: number;
+}
+
+export interface TimeoutResponse {
+  success: true;
+  message: string;
+  protection: "timeout";
+  data: {
+    endpoint: string;
+    method: string;
+    processedAt: string;
+    requestId: string;
+    workMs: number;
+    timeoutMs: number;
+  };
+}
+
+export interface TimeoutExceededResponse {
+  success: false;
+  error: "Request timed out";
+  timeoutMs: number;
+}
+
+export interface ProtectedResponse {
+  success: true;
+  message: string;
+  protection: "multi-layer";
+  layers: string[];
+  data: {
+    endpoint: string;
+    method: string;
+    processedAt: string;
+    requestId: string;
+    layersPassed: string[];
+  };
 }
 
 export interface MetricsSnapshot {

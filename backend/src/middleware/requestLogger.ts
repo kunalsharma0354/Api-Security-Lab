@@ -26,10 +26,12 @@ export function requestLogger(req: Request, res: Response, next: NextFunction): 
     );
 
     if (!METRIC_EXCLUDED_PATHS.has(entry.endpoint)) {
-      const blocked =
-        res.locals.rateLimitBlocked === true ||
-        res.locals.authBlocked === true ||
-        res.locals.validationBlocked === true;
+const blocked =
+res.locals.rateLimitBlocked === true ||
+res.locals.authBlocked === true ||
+res.locals.validationBlocked === true ||
+res.locals.payloadBlocked === true ||
+res.locals.timeoutBlocked === true;
       metricsService.record({
         ...entry,
         blocked,

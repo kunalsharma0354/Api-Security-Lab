@@ -126,8 +126,8 @@ export const API_LABS: ApiLab[] = [
     order: 5,
     name: "Request Size Protection",
     description: "Limits oversized request bodies before they hit logic.",
-    statusLabel: "Protected",
-    statusTone: "neutral",
+    statusLabel: "Active",
+    statusTone: "ready",
     method: "POST",
     endpoint: "/api/payload",
     protection: "REQUEST SIZE",
@@ -137,8 +137,8 @@ export const API_LABS: ApiLab[] = [
     order: 6,
     name: "Timeout Protection",
     description: "Terminates requests that exceed their time budget.",
-    statusLabel: "Protected",
-    statusTone: "neutral",
+    statusLabel: "Active",
+    statusTone: "ready",
     method: "GET",
     endpoint: "/api/timeout",
     protection: "TIMEOUT",
@@ -148,8 +148,8 @@ export const API_LABS: ApiLab[] = [
     order: 7,
     name: "Multi-Layer Protected API",
     description: "Combines several defenses into one hardened endpoint.",
-    statusLabel: "Protected",
-    statusTone: "neutral",
+    statusLabel: "Active",
+    statusTone: "ready",
     method: "GET",
     endpoint: "/api/protected",
     protection: "MULTI-LAYER",
@@ -170,6 +170,9 @@ export const WIRED_LAB_IDS = [
   "rate-limit",
   "auth",
   "validate",
+  "payload",
+  "timeout",
+  "protected",
 ] as const;
 
 /** Default editor contents for the input-validation lab. */
@@ -220,5 +223,27 @@ export const VALIDATION_PRESETS: { label: string; json: string }[] = [
   "age": 18,
   "admin": true
 }`,
+  },
+];
+
+/** Default editor contents for the request-size lab. */
+export const DEFAULT_PAYLOAD_BODY = `{
+  "note": "A small, perfectly acceptable payload"
+}`;
+
+/** Generates a >64 KB body so the backend's real size guard rejects it. */
+export function buildOversizedPayload(targetBytes = 80 * 1024): string {
+  const filler = "a".repeat(Math.max(targetBytes - 40, 1));
+  return `{\n  "data": "${filler}"\n}`;
+}
+
+export const PAYLOAD_PRESETS: { label: string; json: string }[] = [
+  {
+    label: "Small Payload",
+    json: DEFAULT_PAYLOAD_BODY,
+  },
+  {
+    label: "Oversized (~80 KB)",
+    json: buildOversizedPayload(),
   },
 ];

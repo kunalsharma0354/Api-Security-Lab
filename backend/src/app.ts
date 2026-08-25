@@ -13,6 +13,9 @@ import { metricsRouter } from "./routes/metrics";
 import { logsRouter } from "./routes/logs";
 import { createRateLimitRouter } from "./routes/rateLimit";
 import { validationRouter } from "./routes/validation";
+import { createPayloadRouter } from "./routes/payload";
+import { createTimeoutRouter } from "./routes/timeout";
+import { createProtectedRouter } from "./routes/protected";
 import {
   authNotConfiguredHandler,
   createAuthRouter,
@@ -27,6 +30,12 @@ export interface AppOptions {
   rateLimiter?: RateLimiterInstance;
   /** Inject the demo API key (used by tests; defaults to env.DEMO_API_KEY). */
   demoApiKey?: string;
+  /** Payload-lab limit override in KB (tests use small values). */
+  payloadMaxKb?: number;
+  /** Timeout-lab deadline override in ms (tests use fast values). */
+  timeoutMs?: number;
+  /** Protected-lab limiter overrides (tests use tight/fast windows). */
+  protectedRateLimit?: { max?: number; windowSeconds?: number };
 }
 
 function createDefaultRateLimiter(): RateLimiterInstance {
@@ -46,6 +55,16 @@ export function createApp(options: AppOptions = {}): Express {
       : env.demoApiKey;
   const authConfigured =
     typeof demoApiKey === "string" && demoApiKey.length > 0;
+
+  const payloadMaxBytes =
+    (options.payloadMaxKb ?? env.payloadMaxKb) * 1024;
+  const timeoutMs = options.timeoutMs ?? env.timeoutMs;
+  const protectedLimiter = createRateLimiter({
+    max: options.protectedRateLimit?.max ?? env.protectedRateLimit.max,
+    windowMs:
+      (options.protectedRateLimit?.windowSeconds ??
+        env.protectedRateLimit.windowSeconds) * 1000,
+  });
 
   const app = express();
 
@@ -67,14 +86,14 @@ export function createApp(options: AppOptions = {}): Express {
 
   app.use(requestLogger);
 
-  // Scoped parser for the validation lab: runs before the global one so
-  // malformed bodies there become blocked-validation 400s instead of
-  // generic parse errors. (body-parser skips re-parsing when already done.)
+  // Scoped parsers run BEFORE the global one so each lab controls how its
+  // own bodies fail. (body-parser skips re-parsing when already done.)
   app.use(
     "/api/validate",
     express.json({ limit: "256kb" }),
     malformedJsonBlocker,
   );
+  app.use("/api/payload", createPayloadRouter(payloadMaxBytes));
 
   app.use(express.json({ limit: "256kb" }));
 
@@ -87,11 +106,23 @@ export function createApp(options: AppOptions = {}): Express {
         windowSeconds: Math.round(limiter.options.windowMs / 1000),
       },
       auth: { active: authConfigured },
+      payloadMaxKb: Math.round(payloadMaxBytes / 1024),
+      timeoutMs,
     }),
   );
   app.use("/api/demo", demoRouter);
   app.use("/api/rate-limit", createRateLimitRouter(limiter));
   app.use("/api/validate", validationRouter);
+  app.use("/api/timeout", createTimeoutRouter(timeoutMs));
+  app.use(
+    "/api/protected",
+    authConfigured
+      ? createProtectedRouter({
+          limiter: protectedLimiter,
+          apiKey: demoApiKey as string,
+        })
+      : authNotConfiguredHandler(),
+  );
   app.use(
     "/api/auth",
     createAuthRouter(

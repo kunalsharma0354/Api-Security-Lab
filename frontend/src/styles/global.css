@@ -1248,6 +1248,25 @@ code {
   border: 1px solid rgba(244, 191, 79, 0.3);
 }
 
+.lab-result.invalid,
+.lab-result.too-large,
+.lab-result.timeout {
+  border-color: rgba(244, 191, 79, 0.45);
+}
+
+.result-chip.invalid,
+.result-chip.too-large {
+  color: var(--warning);
+  background: var(--warning-soft);
+  border: 1px solid rgba(244, 191, 79, 0.3);
+}
+
+.result-chip.timeout {
+  color: var(--danger);
+  background: var(--danger-soft, rgba(239, 83, 80, 0.12));
+  border: 1px solid rgba(239, 83, 80, 0.35);
+}
+
 .rl-alert {
   display: flex;
   flex-direction: column;

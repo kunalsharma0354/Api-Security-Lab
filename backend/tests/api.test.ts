@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { createServer, type Server } from "node:http";
+import { createServer, request as httpRequest, type Server } from "node:http";
 import test, { after, before, beforeEach, describe } from "node:test";
 import { createApp } from "../src/app";
 import {
@@ -761,5 +761,353 @@ describe("POST /api/validate (input validation)", () => {
       headers: { "X-API-Key": TEST_KEY },
     });
     assert.equal(withKey.status, 200);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Request size protection (Part 6) — POST /api/payload                */
+/* ------------------------------------------------------------------ */
+
+describe("POST /api/payload (request size protection)", () => {
+  let app6: TestServer;
+  let limiter: RateLimiterInstance;
+  const MAX_KB = 1; // 1 KB keeps oversized tests fast
+  const MAX_BYTES = MAX_KB * 1024;
+
+  before(async () => {
+    limiter = createRateLimiter({ max: 1000, windowMs: 60_000 });
+    app6 = await startServer(
+      createApp({
+        demoApiKey: TEST_KEY,
+        rateLimiter: limiter,
+        payloadMaxKb: MAX_KB,
+        timeoutMs: 300,
+        protectedRateLimit: { max: 3, windowSeconds: 1 },
+      }),
+    );
+  });
+
+  after(async () => {
+    await app6.close();
+  });
+
+  async function postPayload(raw: string): Promise<{ status: number; body: any }> {
+    const res = await fetch(`${app6.baseUrl}/api/payload`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: raw,
+    });
+    return { status: res.status, body: await res.json() };
+  }
+
+  /** Raw request with a hand-set Content-Length (undici fetch refuses to lie). */
+  function rawPost(
+    path: string,
+    headers: Record<string, string>,
+    body: string,
+  ): Promise<{ status: number; body: any }> {
+    return new Promise((resolve, reject) => {
+      const url = new URL(app6.baseUrl);
+      const req = httpRequest(
+        {
+          host: url.hostname,
+          port: url.port,
+          path,
+          method: "POST",
+          headers,
+        },
+        (res) => {
+          let data = "";
+          res.on("data", (chunk: Buffer) => (data += chunk.toString()));
+          res.on("end", () => {
+            try {
+              resolve({ status: res.statusCode ?? 0, body: JSON.parse(data) });
+            } catch {
+              resolve({ status: res.statusCode ?? 0, body: null });
+            }
+          });
+        },
+      );
+      req.on("error", reject);
+      req.end(body);
+    });
+  }
+
+  test("a small payload is accepted with size echo", async () => {
+    const { status, body } = await postPayload('{"note":"tiny"}');
+
+    assert.equal(status, 200);
+    assert.equal(body.success, true);
+    assert.equal(body.message, "Payload accepted");
+    assert.equal(body.protection, "request-size");
+    assert.ok(body.data.sizeBytes > 0);
+    assert.equal(body.data.maxBytes, MAX_BYTES);
+    assert.deepEqual(body.data.keys, ["note"]);
+  });
+
+  test("an oversized body is rejected with structured 413", async () => {
+    const big = `{"data":"${"a".repeat(MAX_BYTES)}"}`;
+    const { status, body } = await postPayload(big);
+
+    assert.equal(status, 413);
+    assert.equal(body.success, false);
+    assert.equal(body.error, "Request body too large");
+    assert.equal(typeof body.limitBytes, "number");
+    assert.ok(!JSON.stringify(body).includes("aaaa"), "body contents must not be echoed");
+  });
+
+  test("an inflated Content-Length is refused before the body is read", async () => {
+    const { status, body } = await rawPost(
+      "/api/payload",
+      {
+        "Content-Type": "application/json",
+        // Lie about the size; the guard must reject on the header alone.
+        "Content-Length": String(MAX_BYTES * 10),
+      },
+      "{}",
+    );
+
+    assert.equal(status, 413);
+    assert.equal(body.error, "Request body too large");
+    assert.equal(body.limitBytes, MAX_BYTES);
+    assert.equal(body.receivedBytes, MAX_BYTES * 10);
+  });
+
+  test("malformed JSON on this route gets the structured validation error", async () => {
+    const { status, body } = await postPayload("{nope");
+
+    assert.equal(status, 400);
+    assert.equal(body.success, false);
+    assert.equal(body.fields.body, "Request body must be valid JSON");
+  });
+
+  test("non-object JSON bodies are rejected", async () => {
+    const arrRes = await postPayload("[1,2,3]");
+    assert.equal(arrRes.status, 400);
+
+    const strRes = await postPayload('"just a string"');
+    assert.equal(strRes.status, 400);
+  });
+
+  test("oversized rejections count as blocked, never as errors", async () => {
+    const beforeSnap = (await getJson<MetricsSnapshot>(app6.baseUrl, "/api/metrics")).body;
+
+    await postPayload(`{"data":"${"a".repeat(MAX_BYTES)}"}`); // 413
+
+    const afterSnap = (await getJson<MetricsSnapshot>(app6.baseUrl, "/api/metrics")).body;
+    assert.equal(afterSnap.totalRequests - beforeSnap.totalRequests, 1);
+    assert.equal(afterSnap.blockedRequests - beforeSnap.blockedRequests, 1);
+    assert.equal(afterSnap.errorRequests - beforeSnap.errorRequests, 0);
+    assert.equal(afterSnap.successfulRequests - beforeSnap.successfulRequests, 0);
+  });
+
+  test("payload rejections appear in logs without body contents", async () => {
+    await postPayload(`{"data":"${"a".repeat(MAX_BYTES)}"}`); // 413
+    await postPayload('{"secret_marker_xyz":true}');           // 200
+
+    const logsText = await (
+      await fetch(`${app6.baseUrl}/api/logs?limit=50`)
+    ).text();
+    const parsed = JSON.parse(logsText) as LogsResponse;
+
+    const rejected = parsed.logs.filter(
+      (log) => log.endpoint === "/api/payload" && log.statusCode === 413,
+    );
+    assert.ok(rejected.length >= 1, "413 entries must be recorded");
+
+    assert.ok(!logsText.includes("secret_marker_xyz"), "bodies must never be logged");
+    assert.ok(!logsText.includes("aaaa"));
+  });
+
+  test("health reports the real payload limit", async () => {
+    const { body } = await getJson<any>(app6.baseUrl, "/health");
+    assert.equal(body.payload.active, true);
+    assert.equal(body.payload.maxKb, MAX_KB);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Timeout protection (Part 7) — GET /api/timeout                      */
+/* ------------------------------------------------------------------ */
+
+describe("GET /api/timeout (timeout protection)", () => {
+  let app7: TestServer;
+  let limiter: RateLimiterInstance;
+  const TIMEOUT_MS = 300;
+
+  before(async () => {
+    limiter = createRateLimiter({ max: 1000, windowMs: 60_000 });
+    app7 = await startServer(
+      createApp({
+        demoApiKey: TEST_KEY,
+        rateLimiter: limiter,
+        payloadMaxKb: 1,
+        timeoutMs: TIMEOUT_MS,
+        protectedRateLimit: { max: 3, windowSeconds: 1 },
+      }),
+    );
+  });
+
+  after(async () => {
+    await app7.close();
+  });
+
+  test("a slow handler is cut off with a structured 504 near the deadline", async () => {
+    const startedAt = Date.now();
+    const res = await fetch(`${app7.baseUrl}/api/timeout`);
+    const elapsed = Date.now() - startedAt;
+    const body = (await res.json()) as any;
+
+    assert.equal(res.status, 504);
+    assert.equal(body.success, false);
+    assert.equal(body.error, "Request timed out");
+    assert.equal(body.timeoutMs, TIMEOUT_MS);
+    // The cut-off must happen at the deadline, not after the simulated work.
+    assert.ok(elapsed < 2000, `cut off quickly (took ${elapsed}ms)`);
+    assert.ok(elapsed >= TIMEOUT_MS - 50, "not cut off before the deadline");
+  });
+
+  test("timeouts count as blocked, never as errors", async () => {
+    const beforeSnap = (await getJson<MetricsSnapshot>(app7.baseUrl, "/api/metrics")).body;
+
+    await fetch(`${app7.baseUrl}/api/timeout`); // 504
+
+    const afterSnap = (await getJson<MetricsSnapshot>(app7.baseUrl, "/api/metrics")).body;
+    assert.equal(afterSnap.totalRequests - beforeSnap.totalRequests, 1);
+    assert.equal(afterSnap.blockedRequests - beforeSnap.blockedRequests, 1);
+    assert.equal(afterSnap.errorRequests - beforeSnap.errorRequests, 0);
+  });
+
+  test("timeout entries appear in logs as 504s", async () => {
+    await fetch(`${app7.baseUrl}/api/timeout`);
+
+    const parsed = await (
+      await fetch(`${app7.baseUrl}/api/logs?limit=50`)
+    ).json() as LogsResponse;
+
+    const timedOut = parsed.logs.filter(
+      (log) => log.endpoint === "/api/timeout" && log.statusCode === 504,
+    );
+    assert.ok(timedOut.length >= 1, "504 entries must be recorded");
+  });
+
+  test("isolation: other labs are unaffected by the slow route", async () => {
+    const demo = await fetch(`${app7.baseUrl}/api/demo`);
+    assert.equal(demo.status, 200);
+    const health = await fetch(`${app7.baseUrl}/health`);
+    assert.equal(health.status, 200);
+  });
+
+  test("health reports the real timeout value", async () => {
+    const { body } = await getJson<any>(app7.baseUrl, "/health");
+    assert.equal(body.timeout.active, true);
+    assert.equal(body.timeout.timeoutMs, TIMEOUT_MS);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Multi-layer protection (Part 8) — GET /api/protected                */
+/* ------------------------------------------------------------------ */
+
+describe("GET /api/protected (multi-layer)", () => {
+  let app8: TestServer;
+  let limiter: RateLimiterInstance;
+
+  before(async () => {
+    limiter = createRateLimiter({ max: 1000, windowMs: 60_000 });
+    app8 = await startServer(
+      createApp({
+        demoApiKey: TEST_KEY,
+        rateLimiter: limiter,
+        payloadMaxKb: 1,
+        timeoutMs: 300,
+        protectedRateLimit: { max: 3, windowSeconds: 1 },
+      }),
+    );
+  });
+
+  after(async () => {
+    await app8.close();
+  });
+
+  function get(path: string, headers: Record<string, string> = {}) {
+    return fetch(`${app8.baseUrl}${path}`, { headers });
+  }
+
+  test("missing key → generic 401, wrong key → same 401", async () => {
+    const noKey = await get("/api/protected");
+    assert.equal(noKey.status, 401);
+    const noKeyBody = await noKey.json();
+    assert.deepEqual(noKeyBody, { success: false, error: "Unauthorized" });
+
+    const badKey = await get("/api/protected", { "X-API-Key": "wrong-key-123" });
+    assert.equal(badKey.status, 401);
+    assert.deepEqual(await badKey.json(), { success: false, error: "Unauthorized" });
+  });
+
+  test("valid key passes both layers and reports them", async () => {
+    const res = await get("/api/protected", { "X-API-Key": TEST_KEY });
+    const body = (await res.json()) as any;
+
+    assert.equal(res.status, 200);
+    assert.equal(body.success, true);
+    assert.equal(body.protection, "multi-layer");
+    assert.deepEqual(body.layers, ["rate-limit", "api-key"]);
+    assert.deepEqual(body.data.layersPassed, ["rate-limit", "api-key"]);
+  });
+
+  test("the shield has its own strict limit — floods hit 429 even with a valid key", async () => {
+    let lastStatus = 0;
+    let sawRemainingHeader = false;
+    for (let i = 0; i < 5; i++) {
+      const res = await get("/api/protected", { "X-API-Key": TEST_KEY });
+      lastStatus = res.status;
+      if (res.headers.get("x-ratelimit-remaining") !== null) sawRemainingHeader = true;
+    }
+    assert.equal(lastStatus, 429);
+    assert.ok(sawRemainingHeader, "rate-limit headers must still be present");
+
+    const body = (await (
+      await get("/api/protected", { "X-API-Key": TEST_KEY })
+    ).json()) as any;
+    assert.equal(body.error, "Rate limit exceeded");
+    assert.equal(typeof body.retryAfter, "number");
+  });
+
+  test("the shield window resets independently of the main lab limiter", async () => {
+    // Wait out the 1s protected window.
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+
+    const again = await get("/api/protected", { "X-API-Key": TEST_KEY });
+    assert.equal(again.status, 200);
+
+    // Main rate-limit lab must never have been throttled by all of this.
+    limiter.reset();
+    const rl = await get("/api/rate-limit");
+    assert.equal(rl.status, 200);
+  });
+
+  test("layer order: a flood of bad keys gets 429 (shield first), not 401", async () => {
+    for (let i = 0; i < 3; i++) {
+      await get("/api/protected", { "X-API-Key": "bad-guess" });
+    }
+    const flooded = await get("/api/protected", { "X-API-Key": "bad-guess" });
+    assert.equal(flooded.status, 429, "the shield must fire before auth checks");
+  });
+
+  test("blocked attempts across layers land in metrics as blocked", async () => {
+    const beforeSnap = (await getJson<MetricsSnapshot>(app8.baseUrl, "/api/metrics")).body;
+
+    await get("/api/protected");                                  // 401
+    await get("/api/protected", { "X-API-Key": TEST_KEY });       // 429 or 200 depending on window state
+
+    const afterSnap = (await getJson<MetricsSnapshot>(app8.baseUrl, "/api/metrics")).body;
+    const deltaTotal = afterSnap.totalRequests - beforeSnap.totalRequests;
+    const deltaOkOrBlocked =
+      afterSnap.successfulRequests -
+      beforeSnap.successfulRequests +
+      (afterSnap.blockedRequests - beforeSnap.blockedRequests);
+    assert.equal(deltaTotal, deltaOkOrBlocked, "every request lands in exactly one bucket");
+    assert.equal(afterSnap.errorRequests - beforeSnap.errorRequests, 0);
   });
 });

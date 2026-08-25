@@ -1,10 +1,16 @@
 import { Router } from "express";
-import type { AuthHealth, HealthResponse, RateLimiterHealth } from "../types";
+import type {
+  AuthHealth,
+  HealthResponse,
+  RateLimiterHealth,
+} from "../types";
 import { env } from "../config/env";
 
 export interface HealthRouterConfig {
   rateLimiter: RateLimiterHealth;
   auth: AuthHealth;
+  payloadMaxKb: number;
+  timeoutMs: number;
 }
 
 export function createHealthRouter(config: HealthRouterConfig): Router {
@@ -20,6 +26,8 @@ export function createHealthRouter(config: HealthRouterConfig): Router {
       timestamp: new Date().toISOString(),
       rateLimiter: config.rateLimiter,
       auth: config.auth,
+      payload: { active: true, maxKb: config.payloadMaxKb },
+      timeout: { active: true, timeoutMs: config.timeoutMs },
     };
     res.set("Cache-Control", "no-store");
     res.json(body);

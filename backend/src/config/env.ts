@@ -44,6 +44,15 @@ export const env = {
    * start in that case (see server.ts) because the auth lab is enabled.
    */
   demoApiKey: readOptionalSecret("DEMO_API_KEY"),
+  /** Request-size lab: maximum accepted JSON body size in kilobytes. */
+  payloadMaxKb: readPositiveInt("PAYLOAD_MAX_KB", 64),
+  /** Timeout lab: requests slower than this are cut off with a 504. */
+  timeoutMs: readPositiveInt("TIMEOUT_MS", 2000),
+  /** Multi-layer lab: its own, stricter limiter instance. */
+  protectedRateLimit: {
+    max: readPositiveInt("PROTECTED_RATE_LIMIT_MAX", 5),
+    windowSeconds: readPositiveInt("PROTECTED_RATE_LIMIT_WINDOW_SECONDS", 60),
+  },
 } as const;
 
 export type Env = typeof env;

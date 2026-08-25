@@ -31,6 +31,15 @@ const LAB_CALLERS: Record<string, LabCaller> = {
   // The validation lab sends the raw JSON text exactly as typed —
   // the backend performs the real server-side checks.
   validate: (bodyText) => api.validate(bodyText ?? ""),
+  // The payload lab sends the raw JSON text exactly as typed — oversized
+  // bodies get a structured 413 from the backend.
+  payload: (bodyText) => api.payload(bodyText ?? ""),
+  // The timeout lab triggers deliberately slow backend work that gets cut
+  // off at the server deadline (structured 504).
+  timeout: () => api.timeout(),
+  // The multi-layer lab stacks its strict shield + API-key auth; same key
+  // input pattern as the auth lab.
+  protectedApi: (apiKey) => api.protectedApi(apiKey ? apiKey : null),
 };
 
 const BURST_SIZE = 5;
@@ -88,6 +97,25 @@ export function useLabRunner(options?: LabRunnerOptions) {
             latencyMs: null,
             message: err.message,
             fields: err.fields,
+          };
+        }
+        if (err instanceof ApiRequestError && err.statusCode === 413) {
+          return {
+            kind: "too-large",
+            httpStatus: err.statusCode,
+            latencyMs: null,
+            message: err.message,
+            limitBytes: err.limitBytes,
+            receivedBytes: err.receivedBytes,
+          };
+        }
+        if (err instanceof ApiRequestError && err.statusCode === 504) {
+          return {
+            kind: "timeout",
+            httpStatus: err.statusCode,
+            latencyMs: null,
+            message: err.message,
+            timeoutMs: err.timeoutMs,
           };
         }
         if (err instanceof ApiRequestError && err.statusCode === 401) {

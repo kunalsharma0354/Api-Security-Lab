@@ -8,7 +8,7 @@
 │                              │ ───────► │                                 │
 │  utils/apiClient.ts          │  JSON    │  routes/ health · demo ·        │
 │  hooks/useServicesHealth     │ ◄─────── │    auth · rate-limit ·          │
-│  hooks/useLabRunner          │          │    validate · metrics · logs    │
+│  hooks/useLabRunner          │          │    validate · payload · timeout · protected · metrics · logs    │
 │  components/pages            │          │  middleware/ requestLogger ·    │
 └──────────────────────────────┘          │    errorHandler · rateLimiter · │
                                           │    apiKeyAuth ·                 │
@@ -94,18 +94,37 @@
    field. Validation rejections count as blocked requests — never errors —
    and submitted values never appear in logs or metrics.
 
-## Extension plan for Part 6+
+## Data flow (Parts 6–8)
 
-1. Add protection middlewares under `backend/src/middleware/` following the
-   `createRateLimiter` pattern: a factory returning `{ handler, reset }`,
-   options injected from `config/env.ts`.
-2. Mount them per-route inside route factories
-   (`createRateLimitRouter(limiter)` is the reference implementation);
-   `/api/protected` stacks all of them.
-3. Register new callers in `LAB_CALLERS` (`hooks/useLabRunner.ts`) and add
-   each lab id to `WIRED_LAB_IDS` (`utils/constants.ts`) — the card UI,
-   result rendering, burst button and telemetry refresh already generalize.
-4. When persistence lands, swap `metricsService` internals without touching
+1. **Size guard, two layers.** `POST /api/payload` first refuses requests
+   whose `Content-Length` already exceeds `PAYLOAD_MAX_KB` — before a body
+   byte is read — then a scoped parser ceiling catches anything that slips
+   through (`entity.too.large` → the same structured `413`). Only byte
+   counts are recorded; contents never reach logs or responses.
+2. **Deadline wrapper.** `GET /api/timeout` runs its slow handler under a
+   `setTimeout(TIMEOUT_MS)` race: when the timer fires first the response
+   is the structured `504`, and the late handler completion is ignored
+   (`headersSent` check). Cut-off latency is asserted by tests.
+3. **Layer stacking order.** `GET /api/protected` mounts
+   `limiter.handler` before `createApiKeyAuth(...)` — DoS-first ordering.
+   The shield is a separate `createRateLimiter` instance with its own
+   stricter options, so flooding it never throttles the rate-limit lab.
+4. Both new protections follow the classification contract
+   (`res.locals.{payloadBlocked|timeoutBlocked}` + `recordBlocked()`), so
+   metrics/logs treat 413/504 as blocked, never errors. `/health` now also
+   reports `payload.{active,maxKb}` and `timeout.{active,timeoutMs}`,
+   driving two extra live rows in the API Status panel.
+
+## Extension notes
+
+1. New protection middlewares live under `backend/src/middleware/`
+   following the factory pattern; routes stay thin factories mounted in
+   `createApp` with options injected from `config/env.ts` (or test
+   overrides via `AppOptions`).
+2. Frontend callers are registered in `LAB_CALLERS`; outcome kinds map to
+   dedicated card states. All seven labs are wired — adding more now means
+   only a new route + caller + card entry.
+3. When persistence lands, swap `metricsService` internals without touching
    its public surface (`record`, `getSnapshot`, `getRecentLogs`,
    `recordBlocked`).
 

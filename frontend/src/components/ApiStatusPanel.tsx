@@ -1,6 +1,11 @@
 import { SERVICE_STATUSES, WIRED_LAB_IDS } from "../utils/constants";
 import { BACKEND_OFFLINE_MESSAGE } from "../utils/apiClient";
-import type { AuthHealth, RateLimiterHealth } from "../types";
+import type {
+  AuthHealth,
+  PayloadHealth,
+  RateLimiterHealth,
+  TimeoutHealth,
+} from "../types";
 
 interface ApiStatusPanelProps {
   online: boolean | null;
@@ -10,6 +15,8 @@ interface ApiStatusPanelProps {
   error: string | null;
   rateLimiter?: RateLimiterHealth | null;
   auth?: AuthHealth | null;
+  payload?: PayloadHealth | null;
+  timeout?: TimeoutHealth | null;
   onRefresh: () => void;
 }
 
@@ -33,6 +40,8 @@ export function ApiStatusPanel({
   error,
   rateLimiter,
   auth,
+  payload,
+  timeout,
   onRefresh,
 }: ApiStatusPanelProps) {
   const checkedTime = formatLastChecked(lastCheckedAt);
@@ -101,6 +110,40 @@ export function ApiStatusPanel({
             <span className="service-detail">
               {authActive
                 ? "Active · X-API-Key required on /api/auth"
+                : online
+                  ? "Not configured"
+                  : "Unknown · backend offline"}
+            </span>
+          </span>
+        </div>
+
+        <div className="status-row">
+          <span
+            className={`service-dot ${online && payload?.active ? "online" : "idle"}`}
+          />
+          <span>
+            <span className="service-name">Request Size Protection</span>
+            <br />
+            <span className="service-detail">
+              {online && payload?.active
+                ? `Active · max ${payload.maxKb} KB on POST /api/payload`
+                : online
+                  ? "Not configured"
+                  : "Unknown · backend offline"}
+            </span>
+          </span>
+        </div>
+
+        <div className="status-row">
+          <span
+            className={`service-dot ${online && timeout?.active ? "online" : "idle"}`}
+          />
+          <span>
+            <span className="service-name">Timeout Protection</span>
+            <br />
+            <span className="service-detail">
+              {online && timeout?.active
+                ? `Active · ${timeout.timeoutMs} ms deadline on /api/timeout`
                 : online
                   ? "Not configured"
                   : "Unknown · backend offline"}

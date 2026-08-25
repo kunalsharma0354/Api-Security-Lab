@@ -2,7 +2,9 @@ import { useState } from "react";
 import { LabCard } from "../components/LabCard";
 import {
   API_LABS,
+  DEFAULT_PAYLOAD_BODY,
   DEFAULT_VALIDATE_BODY,
+  PAYLOAD_PRESETS,
   VALIDATION_PRESETS,
   WIRED_LAB_IDS,
 } from "../utils/constants";
@@ -12,7 +14,8 @@ import { useServicesHealth } from "../hooks/useServicesHealth";
 export function ApiLabsPage() {
   const { state: health, refresh: refreshHealth } = useServicesHealth();
   const [authKey, setAuthKey] = useState("");
-const [validateBody, setValidateBody] = useState(DEFAULT_VALIDATE_BODY);
+  const [validateBody, setValidateBody] = useState(DEFAULT_VALIDATE_BODY);
+  const [payloadBody, setPayloadBody] = useState(DEFAULT_PAYLOAD_BODY);
   const runner = useLabRunner({
     onSettled: () => void refreshHealth(),
   });
@@ -58,10 +61,15 @@ const [validateBody, setValidateBody] = useState(DEFAULT_VALIDATE_BODY);
                       label: "Send 5 Test Requests",
                       onClick: () => void runBurst(lab, 5),
                     }
-                  : undefined
+                  : lab.id === "protected"
+                    ? {
+                        label: "Send 6 Requests (Flood Shield)",
+                        onClick: () => void runBurst(lab, 6),
+                      }
+                    : undefined
               }
               textInput={
-                lab.id === "auth"
+                lab.id === "auth" || lab.id === "protected"
                   ? {
                       value: authKey,
                       onChange: setAuthKey,
@@ -76,7 +84,13 @@ const [validateBody, setValidateBody] = useState(DEFAULT_VALIDATE_BODY);
                       onChange: setValidateBody,
                       presets: VALIDATION_PRESETS,
                     }
-                  : undefined
+                  : lab.id === "payload"
+                    ? {
+                        value: payloadBody,
+                        onChange: setPayloadBody,
+                        presets: PAYLOAD_PRESETS,
+                      }
+                    : undefined
               }
             />
           ))}

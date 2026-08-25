@@ -73,6 +73,16 @@ export interface AuthHealth {
   active: boolean;
 }
 
+export interface PayloadHealth {
+  active: boolean;
+  maxKb: number;
+}
+
+export interface TimeoutHealth {
+  active: boolean;
+  timeoutMs: number;
+}
+
 export interface HealthInfo {
   status: "ok";
   service: string;
@@ -80,6 +90,8 @@ export interface HealthInfo {
   timestamp: string;
   rateLimiter: RateLimiterHealth;
   auth?: AuthHealth;
+  payload?: PayloadHealth;
+  timeout?: TimeoutHealth;
 }
 
 export interface DemoResponse {
@@ -160,6 +172,60 @@ export interface ValidationErrorResponse {
   fields: Record<string, string>;
 }
 
+export interface PayloadHealth {
+  active: boolean;
+  maxKb: number;
+}
+
+export interface TimeoutHealth {
+  active: boolean;
+  timeoutMs: number;
+}
+
+export interface PayloadResponse {
+  success: true;
+  message: string;
+  protection: "request-size";
+  data: {
+    endpoint: string;
+    method: string;
+    processedAt: string;
+    requestId: string;
+    sizeBytes: number;
+    maxBytes: number;
+    fieldsReceived: number;
+    keys: string[];
+  };
+}
+
+export interface TimeoutResponse {
+  success: true;
+  message: string;
+  protection: "timeout";
+  data: {
+    endpoint: string;
+    method: string;
+    processedAt: string;
+    requestId: string;
+    workMs: number;
+    timeoutMs: number;
+  };
+}
+
+export interface ProtectedResponse {
+  success: true;
+  message: string;
+  protection: "multi-layer";
+  layers: string[];
+  data: {
+    endpoint: string;
+    method: string;
+    processedAt: string;
+    requestId: string;
+    layersPassed: string[];
+  };
+}
+
 export interface MetricsSnapshot {
   totalRequests: number;
   successfulRequests: number;
@@ -222,6 +288,23 @@ export type LabRequestOutcome =
       message: string;
       /** One entry per rejected field, straight from the backend. */
       fields: Record<string, string>;
+    }
+  | {
+      kind: "too-large";
+      httpStatus: number;
+      latencyMs: number | null;
+      message: string;
+      /** Backend-reported byte limit for the educational display. */
+      limitBytes?: number;
+      receivedBytes?: number;
+    }
+  | {
+      kind: "timeout";
+      httpStatus: number;
+      latencyMs: number | null;
+      message: string;
+      /** Backend-reported deadline that cut the request off. */
+      timeoutMs?: number;
     }
   | {
       kind: "error";

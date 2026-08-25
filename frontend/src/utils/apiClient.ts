@@ -5,8 +5,11 @@ import type {
   HealthInfo,
   LogsResponse,
   MetricsSnapshot,
+  PayloadResponse,
+  ProtectedResponse,
   RateLimitInfo,
   RateLimitResponse,
+  TimeoutResponse,
   ValidationResponse,
 } from "../types";
 
@@ -24,6 +27,12 @@ export class ApiRequestError extends Error {
   readonly rateLimitInfo?: RateLimitInfo;
   /** Structured validation errors (400 responses from /api/validate). */
   readonly fields?: Record<string, string>;
+  /** Byte limit reported by structured 413 responses. */
+  readonly limitBytes?: number;
+  /** Byte count received, when the backend reports it. */
+  readonly receivedBytes?: number;
+  /** Deadline reported by structured 504 responses. */
+  readonly timeoutMs?: number;
 
   constructor(
     message: string,
@@ -32,6 +41,9 @@ export class ApiRequestError extends Error {
       retryAfterSeconds?: number | null;
       rateLimitInfo?: RateLimitInfo;
       fields?: Record<string, string>;
+      limitBytes?: number;
+      receivedBytes?: number;
+      timeoutMs?: number;
     } = {},
   ) {
     super(message);
@@ -40,6 +52,9 @@ export class ApiRequestError extends Error {
     this.retryAfterSeconds = extra.retryAfterSeconds ?? null;
     this.rateLimitInfo = extra.rateLimitInfo;
     this.fields = extra.fields;
+    this.limitBytes = extra.limitBytes;
+    this.receivedBytes = extra.receivedBytes;
+    this.timeoutMs = extra.timeoutMs;
   }
 }
 
@@ -126,10 +141,20 @@ async function request<T>(
       }
     }
 
+    // Structured 413 / 504 payloads carry their protection parameters.
+    const numeric = (value: unknown): number | undefined =>
+      typeof value === "number" && Number.isFinite(value) ? value : undefined;
+    const limitBytes = numeric((body as { limitBytes?: unknown } | null)?.limitBytes);
+    const receivedBytes = numeric((body as { receivedBytes?: unknown } | null)?.receivedBytes);
+    const timeoutMs = numeric((body as { timeoutMs?: unknown } | null)?.timeoutMs);
+
     throw new ApiRequestError(message, response.status, {
       retryAfterSeconds,
       rateLimitInfo: rateLimit,
       fields,
+      limitBytes,
+      receivedBytes,
+      timeoutMs,
     });
   }
 
@@ -158,6 +183,27 @@ export const api = {
       "/api/validate",
       { "Content-Type": "application/json" },
       { method: "POST", body: jsonBody },
+    ),
+  /**
+   * Request-size lab. Sends the raw JSON text exactly as typed — oversized
+   * payloads get a structured 413 from the backend.
+   */
+  payload: (jsonBody: string) =>
+    request<PayloadResponse>(
+      "/api/payload",
+      { "Content-Type": "application/json" },
+      { method: "POST", body: jsonBody },
+    ),
+  /**
+   * Timeout lab. The backend deliberately works slower than its deadline
+   * and cuts the request off with a structured 504.
+   */
+  timeout: () => request<TimeoutResponse>("/api/timeout"),
+  /** Multi-layer lab: strict shield + API-key auth stacked on one route. */
+  protectedApi: (apiKey: string | null) =>
+    request<ProtectedResponse>(
+      "/api/protected",
+      apiKey ? { "X-API-Key": apiKey } : {},
     ),
   metrics: () => request<MetricsSnapshot>("/api/metrics"),
   logs: (limit = 25) => request<LogsResponse>(`/api/logs?limit=${limit}`),

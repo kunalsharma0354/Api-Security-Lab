@@ -6,7 +6,9 @@ import { ApiStatusPanel } from "../components/ApiStatusPanel";
 import {
   API_LABS,
   DASHBOARD_STATS,
+  DEFAULT_PAYLOAD_BODY,
   DEFAULT_VALIDATE_BODY,
+  PAYLOAD_PRESETS,
   VALIDATION_PRESETS,
   WIRED_LAB_IDS,
 } from "../utils/constants";
@@ -43,6 +45,7 @@ export function DashboardPage() {
   const [telemetryError, setTelemetryError] = useState<string | null>(null);
   const [authKey, setAuthKey] = useState("");
 const [validateBody, setValidateBody] = useState(DEFAULT_VALIDATE_BODY);
+const [payloadBody, setPayloadBody] = useState(DEFAULT_PAYLOAD_BODY);
 
   const refreshTelemetry = useCallback(async () => {
     try {
@@ -147,10 +150,15 @@ const [validateBody, setValidateBody] = useState(DEFAULT_VALIDATE_BODY);
                       label: "Send 5 Test Requests",
                       onClick: () => void runner.runBurst(lab, 5),
                     }
-                  : undefined
+                  : lab.id === "protected"
+                    ? {
+                        label: "Send 6 Requests (Flood Shield)",
+                        onClick: () => void runner.runBurst(lab, 6),
+                      }
+                    : undefined
               }
               textInput={
-                lab.id === "auth"
+                lab.id === "auth" || lab.id === "protected"
                   ? {
                       value: authKey,
                       onChange: setAuthKey,
@@ -165,7 +173,13 @@ const [validateBody, setValidateBody] = useState(DEFAULT_VALIDATE_BODY);
                       onChange: setValidateBody,
                       presets: VALIDATION_PRESETS,
                     }
-                  : undefined
+                  : lab.id === "payload"
+                    ? {
+                        value: payloadBody,
+                        onChange: setPayloadBody,
+                        presets: PAYLOAD_PRESETS,
+                      }
+                    : undefined
               }
             />
           ))}
@@ -189,6 +203,8 @@ const [validateBody, setValidateBody] = useState(DEFAULT_VALIDATE_BODY);
           error={health.error}
           rateLimiter={health.info?.rateLimiter ?? null}
           auth={health.info?.auth ?? null}
+          payload={health.info?.payload ?? null}
+          timeout={health.info?.timeout ?? null}
           onRefresh={() => void refreshHealth()}
         />
       </div>

@@ -57,9 +57,10 @@ export function RequestActivityTable({ entries = [] }: RequestActivityTableProps
 function statusTone(statusCode: number | null): string {
   if (statusCode === null) return "";
   if (statusCode < 400) return "ok";
-  // 400 (rejected input), 401 (rejected key) and 429 (rate limited) are
-  // expected protection responses, not failures — render them as warnings.
-  if (statusCode === 429 || statusCode === 401 || statusCode === 400) {
+  // 400 (rejected input), 401 (rejected key), 413 (oversized body),
+  // 429 (rate limited) and 504 (timed out) are expected protection
+  // responses, not failures — render them as warnings.
+  if ([400, 401, 413, 429, 504].includes(statusCode)) {
     return "warn";
   }
   return "err";
