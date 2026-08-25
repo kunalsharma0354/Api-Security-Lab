@@ -162,7 +162,7 @@ const [payloadBody, setPayloadBody] = useState(DEFAULT_PAYLOAD_BODY);
                   ? {
                       value: authKey,
                       onChange: setAuthKey,
-                      placeholder: "Paste the demo API key…",
+                      placeholder: "Paste your API key…",
                     }
                   : undefined
               }

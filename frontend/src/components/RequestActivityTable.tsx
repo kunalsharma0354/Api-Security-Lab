@@ -1,7 +1,7 @@
 import type { LogEntry } from "../types";
 
 interface RequestActivityTableProps {
-  /** Real entries arrive with the backend in Part 2. Empty for now. */
+  /** Live entries streamed from the backend. */
   entries?: LogEntry[];
 }
 
@@ -13,7 +13,7 @@ export function RequestActivityTable({ entries = [] }: RequestActivityTableProps
       <div className="panel-head">
         <h3 className="panel-title">Request Activity</h3>
         <span className="section-note">
-          Live log streaming connects in Part 2
+          Streaming live from the backend
         </span>
       </div>
       <div className="table-wrap">

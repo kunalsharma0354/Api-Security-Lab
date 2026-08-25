@@ -25,7 +25,7 @@ export function AnalyticsPage() {
       <PlaceholderBlock
         icon="analytics"
         title="Analytics arrive with real data"
-        description="This view populates automatically once the backend records request metrics in Part 2. No synthetic data is shown before then."
+        description="This view populates automatically from live request metrics recorded by the backend. No synthetic data is ever shown."
       />
     </>
   );
@@ -44,7 +44,7 @@ function PlaceholderBlock({
       <h2 className="placeholder-title">{title}</h2>
       <p className="placeholder-text">{description}</p>
       <div className="placeholder-steps">
-        <Badge label="Part 2 · Backend" tone="warning" dot={false} />
+        <Badge label="Live Backend" tone="warning" dot={false} />
         <Badge label="No fake data" tone="off" dot={false} />
       </div>
     </section>

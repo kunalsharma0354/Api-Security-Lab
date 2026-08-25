@@ -11,12 +11,12 @@ export interface NavEntry {
 export const NAV_MAIN: NavEntry[] = [
   { label: "Dashboard", path: "/", icon: "dashboard" },
   { label: "API Labs", path: "/labs", icon: "flask" },
-  { label: "Get API Key", path: "/get-api-key", icon: "key", tag: "Part 9" },
+  { label: "Get API Key", path: "/get-api-key", icon: "key" },
 ];
 
 export const NAV_MONITORING: NavEntry[] = [
-  { label: "Request Logs", path: "/logs", icon: "logs", tag: "Part 2" },
-  { label: "Analytics", path: "/analytics", icon: "analytics", tag: "Part 2" },
+  { label: "Request Logs", path: "/logs", icon: "logs" },
+  { label: "Analytics", path: "/analytics", icon: "analytics" },
 ];
 
 export const NAV_RESOURCES: NavEntry[] = [
@@ -162,8 +162,8 @@ export const SERVICE_STATUSES: ServiceStatus[] = [
   { id: "database", name: "Database", detail: "Not connected", state: "idle" },
 ];
 
-/** Message shown when a not-yet-wired lab button is pressed. */
-export const PART3_NOTICE = "This lab is not wired to the backend yet";
+/** Message shown when a lab button is pressed but the route is unavailable. */
+export const PART3_NOTICE = "This lab is not available yet";
 
 /** Labs that currently have a real backend implementation attached. */
 export const WIRED_LAB_IDS = [

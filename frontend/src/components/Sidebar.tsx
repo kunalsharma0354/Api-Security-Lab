@@ -71,11 +71,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       <div className="sidebar-foot">
         <div className="foot-line">
           <span>Environment</span>
-          <span className="foot-value">LOCAL / DEMO</span>
+          <span className="foot-value">PRODUCTION</span>
         </div>
         <div className="foot-line">
-          <span>Build</span>
-          <span className="foot-value">Part 1 · UI</span>
+          <span>Version</span>
+          <span className="foot-value">v1.0</span>
         </div>
       </div>
     </aside>

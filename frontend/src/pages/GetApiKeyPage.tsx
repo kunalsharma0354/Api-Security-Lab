@@ -104,7 +104,7 @@ export function GetApiKeyPage() {
     <>
       <div className="page-head">
         <div>
-          <div className="page-kicker">Part 9 · Key Issuer</div>
+          <div className="page-kicker">Key Issuer</div>
           <h1 className="page-title">Get API Key</h1>
           <p className="page-desc">
             Mint your own API keys for the authentication and multi-layer labs.

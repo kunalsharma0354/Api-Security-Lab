@@ -41,9 +41,9 @@ export function Header({ onMenuToggle }: HeaderProps) {
         <span className="brand-sub">API Security Lab</span>
       </span>
 
-      <span className="env-chip" title="Local demonstration environment">
+      <span className="env-chip" title="Deployment environment">
         <span className="chip-dot" />
-        LOCAL / DEMO
+        LIVE
       </span>
 
       <div className="topbar-spacer" />
@@ -53,11 +53,11 @@ export function Header({ onMenuToggle }: HeaderProps) {
         {pillLabel}
       </span>
 
-      <button type="button" className="user-chip" title="Signed in as local demo user">
+      <button type="button" className="user-chip" title="Signed in user session">
         <span className="avatar" aria-hidden="true">NX</span>
         <span className="user-meta">
           <span className="user-name">Local User</span>
-          <span className="user-role">demo session</span>
+          <span className="user-role">admin session</span>
         </span>
       </button>
     </header>

@@ -302,7 +302,7 @@ export function LabCard({
             type="text"
             className="field-input lab-key-input"
             value={textInput.value}
-            placeholder={textInput.placeholder ?? "Paste the demo API key…"}
+            placeholder={textInput.placeholder ?? "Paste your API key…"}
             autoComplete={textInput.autoComplete ?? "off"}
             spellCheck={false}
             onChange={(event) => textInput.onChange(event.target.value)}

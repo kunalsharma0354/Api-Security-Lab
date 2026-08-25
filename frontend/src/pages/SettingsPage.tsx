@@ -33,7 +33,7 @@ export function SettingsPage() {
               readOnly
             />
             <span className="field-note">
-              The Express server introduced in Part 2 listens here.
+              The Express backend listens here.
             </span>
           </div>
 

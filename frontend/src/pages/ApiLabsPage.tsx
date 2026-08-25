@@ -73,7 +73,7 @@ export function ApiLabsPage() {
                   ? {
                       value: authKey,
                       onChange: setAuthKey,
-                      placeholder: "Paste the demo API key…",
+                      placeholder: "Paste your API key…",
                     }
                   : undefined
               }

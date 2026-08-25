@@ -1,37 +1,37 @@
 /* ============================================================
-   NEXORA · API Security Lab — Design System (Part 1)
-   Dark, professional developer-tool aesthetic.
+   NEXORA · API Security Lab — Design System
+   Pure black & white monochrome aesthetic.
    ============================================================ */
 
 /* ---------- 1. Design tokens ---------- */
 :root {
-  --bg: #0a0d13;
-  --bg-soft: #0d1119;
-  --panel: #10141d;
-  --panel-raised: #131826;
-  --panel-hover: #161c2b;
+  --bg: #000000;
+  --bg-soft: #0a0a0a;
+  --panel: #0f0f0f;
+  --panel-raised: #141414;
+  --panel-hover: #1c1c1c;
 
-  --border: #1c2333;
-  --border-strong: #273047;
-  --divider: #171e2d;
+  --border: #232323;
+  --border-strong: #333333;
+  --divider: #191919;
 
-  --text: #e8ecf4;
-  --text-dim: #9aa5ba;
-  --text-faint: #626e85;
+  --text: #fafafa;
+  --text-dim: #a1a1a1;
+  --text-faint: #666666;
 
-  --accent: #6d7cff;
-  --accent-strong: #5563f0;
-  --accent-soft: rgba(109, 124, 255, 0.12);
-  --accent-border: rgba(109, 124, 255, 0.35);
+  --accent: #ffffff;
+  --accent-strong: #d4d4d4;
+  --accent-soft: rgba(255, 255, 255, 0.08);
+  --accent-border: rgba(255, 255, 255, 0.35);
 
-  --success: #3fd68f;
-  --success-soft: rgba(63, 214, 143, 0.12);
-  --warning: #f4bf4f;
-  --warning-soft: rgba(244, 191, 79, 0.12);
-  --danger: #f47272;
-  --danger-soft: rgba(244, 114, 114, 0.12);
-  --info: #54b9f0;
-  --info-soft: rgba(84, 185, 240, 0.12);
+  --success: #ffffff;
+  --success-soft: rgba(255, 255, 255, 0.08);
+  --warning: #bdbdbd;
+  --warning-soft: rgba(255, 255, 255, 0.06);
+  --danger: #8a8a8a;
+  --danger-soft: rgba(255, 255, 255, 0.05);
+  --info: #d9d9d9;
+  --info-soft: rgba(255, 255, 255, 0.07);
 
   --radius-lg: 12px;
   --radius-md: 9px;
@@ -117,16 +117,16 @@ code {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #232b3e;
+  background: #2e2e2e;
   border-radius: 8px;
   border: 2px solid var(--bg);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #2e3850;
+  background: #303030;
 }
 
 ::selection {
-  background: rgba(109, 124, 255, 0.35);
+  background: rgba(255, 255, 255, 0.35);
 }
 
 /* ---------- 3. App shell ---------- */
@@ -194,10 +194,10 @@ code {
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  background: linear-gradient(135deg, #7c8cff 0%, #4f46e5 100%);
+  background: linear-gradient(135deg, #ededed 0%, #ffffff 100%);
   color: #fff;
-  box-shadow: 0 0 0 1px rgba(124, 140, 255, 0.35),
-    0 4px 14px rgba(85, 99, 240, 0.35);
+  box-shadow: 0 0 0 1px rgba(237, 237, 237, 0.35),
+    0 4px 14px rgba(212, 212, 212, 0.35);
   flex-shrink: 0;
 }
 
@@ -265,7 +265,7 @@ code {
 .nav-item.active {
   background: var(--accent-soft);
   border-color: var(--accent-border);
-  color: #c3caff;
+  color: #ffffff;
 }
 
 .nav-item svg {
@@ -282,7 +282,7 @@ code {
   border-radius: 5px;
   background: var(--warning-soft);
   color: var(--warning);
-  border: 1px solid rgba(244, 191, 79, 0.25);
+  border: 1px solid rgba(189, 189, 189, 0.25);
 }
 
 .sidebar-foot {
@@ -311,7 +311,7 @@ code {
 .scrim {
   position: fixed;
   inset: 0;
-  background: rgba(4, 6, 10, 0.65);
+  background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(2px);
   opacity: 0;
   pointer-events: none;
@@ -336,7 +336,7 @@ code {
   align-items: center;
   gap: 14px;
   padding: 0 20px;
-  background: rgba(10, 13, 19, 0.82);
+  background: rgba(0, 0, 0, 0.82);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
 }
@@ -454,9 +454,9 @@ code {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.03em;
-  color: #dfe4ff;
-  background: linear-gradient(135deg, #39406b 0%, #232a49 100%);
-  border: 1px solid #3a4370;
+  color: #eeeeee;
+  background: linear-gradient(135deg, #404040 0%, #2a2a2a 100%);
+  border: 1px solid #454545;
   flex-shrink: 0;
 }
 
@@ -592,25 +592,25 @@ code {
 .stat-icon.tone-success {
   color: var(--success);
   background: var(--success-soft);
-  border-color: rgba(63, 214, 143, 0.3);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .stat-icon.tone-warning {
   color: var(--warning);
   background: var(--warning-soft);
-  border-color: rgba(244, 191, 79, 0.3);
+  border-color: rgba(189, 189, 189, 0.3);
 }
 
 .stat-icon.tone-danger {
   color: var(--danger);
   background: var(--danger-soft);
-  border-color: rgba(244, 114, 114, 0.3);
+  border-color: rgba(138, 138, 138, 0.3);
 }
 
 .stat-icon.tone-info {
   color: var(--info);
   background: var(--info-soft);
-  border-color: rgba(84, 185, 240, 0.3);
+  border-color: rgba(217, 217, 217, 0.3);
 }
 
 .stat-value {
@@ -660,7 +660,7 @@ code {
 .badge.tone-ready {
   color: var(--success);
   background: var(--success-soft);
-  border-color: rgba(63, 214, 143, 0.3);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .badge.tone-off {
@@ -672,11 +672,11 @@ code {
 .badge.tone-neutral {
   color: var(--info);
   background: var(--info-soft);
-  border-color: rgba(84, 185, 240, 0.3);
+  border-color: rgba(217, 217, 217, 0.3);
 }
 
 .badge.tone-protection {
-  color: #b7bfff;
+  color: #e5e5e5;
   background: var(--accent-soft);
   border-color: var(--accent-border);
 }
@@ -684,7 +684,7 @@ code {
 .badge.tone-warning {
   color: var(--warning);
   background: var(--warning-soft);
-  border-color: rgba(244, 191, 79, 0.3);
+  border-color: rgba(189, 189, 189, 0.3);
 }
 
 /* ---------- 9. Lab cards ---------- */
@@ -775,7 +775,7 @@ code {
   letter-spacing: 0.05em;
   color: var(--info);
   background: var(--info-soft);
-  border: 1px solid rgba(84, 185, 240, 0.3);
+  border: 1px solid rgba(217, 217, 217, 0.3);
   padding: 2px 8px;
   border-radius: var(--radius-sm);
 }
@@ -817,19 +817,19 @@ code {
 .btn:hover:not(:disabled) {
   background: var(--panel-hover);
   color: var(--text);
-  border-color: #333e5c;
+  border-color: #3d3d3d;
 }
 
 .btn-primary {
   width: 100%;
   border-color: var(--accent-border);
   background: var(--accent-soft);
-  color: #c3caff;
+  color: #ffffff;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: rgba(109, 124, 255, 0.2);
-  color: #dde0ff;
+  background: rgba(255, 255, 255, 0.2);
+  color: #f5f5f5;
   border-color: var(--accent);
 }
 
@@ -942,7 +942,7 @@ code {
 
 .service-dot.idle {
   background: var(--text-faint);
-  box-shadow: 0 0 0 3px rgba(98, 110, 133, 0.12);
+  box-shadow: 0 0 0 3px rgba(161, 161, 161, 0.12);
 }
 
 .service-dot.waiting {
@@ -1096,7 +1096,7 @@ code {
   margin-bottom: 18px;
   padding: 12px 16px;
   border-radius: var(--radius-md);
-  border: 1px solid rgba(244, 191, 79, 0.35);
+  border: 1px solid rgba(189, 189, 189, 0.35);
   background: var(--warning-soft);
   color: var(--text-dim);
   font-size: 13px;
@@ -1115,8 +1115,8 @@ code {
   height: 22px;
   border-radius: 50%;
   flex-shrink: 0;
-  background: rgba(244, 191, 79, 0.2);
-  border: 1px solid rgba(244, 191, 79, 0.4);
+  background: rgba(189, 189, 189, 0.2);
+  border: 1px solid rgba(189, 189, 189, 0.4);
   color: var(--warning);
   font-weight: 800;
   font-size: 12px;
@@ -1150,11 +1150,11 @@ code {
 }
 
 .lab-result.success {
-  border-color: rgba(63, 214, 143, 0.35);
+  border-color: rgba(255, 255, 255, 0.35);
 }
 
 .lab-result.error {
-  border-color: rgba(244, 114, 114, 0.4);
+  border-color: rgba(138, 138, 138, 0.4);
 }
 
 .result-row {
@@ -1178,13 +1178,13 @@ code {
 .result-chip.success {
   color: var(--success);
   background: var(--success-soft);
-  border: 1px solid rgba(63, 214, 143, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .result-chip.error {
   color: var(--danger);
   background: var(--danger-soft);
-  border: 1px solid rgba(244, 114, 114, 0.3);
+  border: 1px solid rgba(138, 138, 138, 0.3);
 }
 
 .result-latency {
@@ -1239,32 +1239,32 @@ code {
 }
 
 .lab-result.limited {
-  border-color: rgba(244, 191, 79, 0.45);
+  border-color: rgba(189, 189, 189, 0.45);
 }
 
 .result-chip.limited {
   color: var(--warning);
   background: var(--warning-soft);
-  border: 1px solid rgba(244, 191, 79, 0.3);
+  border: 1px solid rgba(189, 189, 189, 0.3);
 }
 
 .lab-result.invalid,
 .lab-result.too-large,
 .lab-result.timeout {
-  border-color: rgba(244, 191, 79, 0.45);
+  border-color: rgba(189, 189, 189, 0.45);
 }
 
 .result-chip.invalid,
 .result-chip.too-large {
   color: var(--warning);
   background: var(--warning-soft);
-  border: 1px solid rgba(244, 191, 79, 0.3);
+  border: 1px solid rgba(189, 189, 189, 0.3);
 }
 
 .result-chip.timeout {
   color: var(--danger);
-  background: var(--danger-soft, rgba(239, 83, 80, 0.12));
-  border: 1px solid rgba(239, 83, 80, 0.35);
+  background: var(--danger-soft, rgba(138, 138, 138, 0.12));
+  border: 1px solid rgba(138, 138, 138, 0.35);
 }
 
 .rl-alert {
@@ -1274,7 +1274,7 @@ code {
   padding: 9px 11px;
   margin-bottom: 10px;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(244, 191, 79, 0.4);
+  border: 1px solid rgba(189, 189, 189, 0.4);
   background: var(--warning-soft);
   font-size: 12px;
   color: var(--text-dim);
@@ -1353,7 +1353,7 @@ code {
 .result-chip.unauthorized {
   color: var(--warning);
   background: var(--warning-soft);
-  border: 1px solid rgba(244, 191, 79, 0.3);
+  border: 1px solid rgba(189, 189, 189, 0.3);
 }
 
 .auth-alert {
@@ -1375,7 +1375,7 @@ code {
 }
 
 .auth-alert.ok {
-  border-color: rgba(94, 204, 137, 0.4);
+  border-color: rgba(255, 255, 255, 0.4);
   background: var(--success-soft);
 }
 
@@ -1384,7 +1384,7 @@ code {
 }
 
 .auth-alert.blocked {
-  border-color: rgba(244, 191, 79, 0.4);
+  border-color: rgba(189, 189, 189, 0.4);
   background: var(--warning-soft);
 }
 
@@ -1540,7 +1540,7 @@ code {
 .preset-btn:hover:not(:disabled) {
   color: var(--text);
   border-color: var(--accent);
-  background: rgba(56, 132, 255, 0.08);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .preset-btn:disabled {
@@ -1552,7 +1552,7 @@ code {
   margin-top: 10px;
   padding: 8px 11px;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(244, 191, 79, 0.4);
+  border: 1px solid rgba(189, 189, 189, 0.4);
   background: var(--warning-soft);
   color: var(--warning);
   font-size: 12px;
@@ -1564,7 +1564,7 @@ code {
   gap: 3px;
   margin-top: 7px;
   padding-top: 7px;
-  border-top: 1px dashed rgba(244, 191, 79, 0.35);
+  border-top: 1px dashed rgba(189, 189, 189, 0.35);
 }
 
 .vf-row {
@@ -1579,7 +1579,7 @@ code {
   min-width: 64px;
   padding: 1px 6px;
   border-radius: 4px;
-  background: rgba(244, 191, 79, 0.14);
+  background: rgba(189, 189, 189, 0.14);
   color: var(--warning);
   font-size: 11px;
 }
@@ -1612,9 +1612,9 @@ code {
 .key-reveal {
   margin-top: 16px;
   padding: 14px 16px;
-  border: 1px solid rgba(244, 191, 79, 0.4);
+  border: 1px solid rgba(189, 189, 189, 0.4);
   border-radius: 10px;
-  background: rgba(244, 191, 79, 0.07);
+  background: rgba(189, 189, 189, 0.07);
 }
 
 .key-reveal-head {
