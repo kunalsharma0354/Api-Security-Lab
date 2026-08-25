@@ -129,7 +129,7 @@ export function GetApiKeyPage() {
         <div className="keys-actions">
           <button
             type="button"
-            className="btn btn-primary"
+            className={`btn btn-primary${issuing ? " is-busy" : ""}`}
             onClick={() => void handleGenerate()}
             disabled={issuing || blockedSeconds !== null}
           >

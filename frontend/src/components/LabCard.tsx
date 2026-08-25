@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Badge } from "./Badge";
 import { useServicesHealth } from "../hooks/useServicesHealth";
 import type {
@@ -119,6 +119,17 @@ export function LabCard({
 }: LabCardProps) {
   const { state: health } = useServicesHealth();
   const [syntaxError, setSyntaxError] = useState<string | null>(null);
+
+  // Bump on every fresh outcome so the response panel remounts and its
+  // pop-in animation replays for each API hit.
+  const [runId, setRunId] = useState(0);
+  const lastOutcome = useRef(outcome);
+  useEffect(() => {
+    if (outcome !== lastOutcome.current) {
+      lastOutcome.current = outcome;
+      setRunId((n) => n + 1);
+    }
+  }, [outcome]);
   const payloadText =
     outcome?.kind === "success" ? formatPayload(outcome.payload) : null;
 
@@ -267,7 +278,7 @@ export function LabCard({
   }
 
   return (
-    <article className="card lab-card">
+        <article className={`card lab-card${running ? " running" : ""}`}>
       <div className="lab-top">
         <span className="lab-index">{String(lab.order).padStart(2, "0")}</span>
         <Badge label={lab.statusLabel} tone={lab.statusTone} />
@@ -351,7 +362,7 @@ export function LabCard({
       )}
 
       {outcome && (
-        <div className={`lab-result ${outcome.kind}`}>
+        <div key={runId} className={`lab-result ${outcome.kind}`}>
           {alertBlock && (
             <div className={`auth-alert ${alertBlock.tone}`}>
               <strong>{alertBlock.title}</strong>
@@ -433,7 +444,7 @@ export function LabCard({
       <div className="lab-actions">
         <button
           type="button"
-          className="btn btn-primary"
+          className={`btn btn-primary${running ? " is-busy" : ""}`}
           disabled={running}
           onClick={handleSend}
         >

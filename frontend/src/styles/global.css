@@ -1682,3 +1682,223 @@ code {
   font-size: 12.5px;
   line-height: 1.9;
 }
+
+/* ============================================================
+   Motion system · ambient scene · selection lock
+   ============================================================ */
+
+/* ---------- Text selection lock (3D-site style) ---------- */
+body {
+  user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+input,
+textarea,
+select,
+pre,
+code,
+.result-json,
+.endpoint-code,
+.key-reveal-value {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* ---------- Ambient scene: perspective grid + drifting glows ---------- */
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  background:
+    radial-gradient(640px 420px at 12% 8%, rgba(255, 255, 255, 0.05), transparent 70%),
+    radial-gradient(760px 520px at 88% 88%, rgba(255, 255, 255, 0.04), transparent 70%);
+  animation: glowDrift 24s ease-in-out infinite alternate;
+}
+
+.ambient::before {
+  content: "";
+  position: absolute;
+  left: -30%;
+  right: -30%;
+  top: -10%;
+  height: 160%;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 46px 46px;
+  transform: perspective(700px) rotateX(52deg);
+  transform-origin: 50% 0;
+  mask-image: radial-gradient(ellipse at 50% 20%, black 25%, transparent 72%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 20%, black 25%, transparent 72%);
+  animation: gridDrift 16s linear infinite;
+  opacity: 0.55;
+}
+
+@keyframes gridDrift {
+  to { background-position: 0 46px; }
+}
+
+@keyframes glowDrift {
+  from { background-position: 0% 0%, 100% 100%; }
+  to   { background-position: 18% 14%, 82% 86%; }
+}
+
+/* ---------- Keyframes library ---------- */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.985); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes breathe {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.35); }
+  50%      { box-shadow: 0 0 0 5px rgba(255, 255, 255, 0); }
+}
+
+@keyframes cardScan {
+  0%   { top: 0; opacity: 0; }
+  15%  { opacity: 0.85; }
+  85%  { opacity: 0.85; }
+  100% { top: calc(100% - 1px); opacity: 0; }
+}
+
+/* ---------- Page entrance (replays on every route change) ---------- */
+.page-head {
+  animation: fadeUp 0.45s cubic-bezier(0.21, 0.9, 0.35, 1) both;
+}
+
+.content > * {
+  animation: cardIn 0.5s cubic-bezier(0.21, 0.9, 0.35, 1) both;
+}
+
+.content > *:nth-child(2) { animation-delay: 0.06s; }
+.content > *:nth-child(3) { animation-delay: 0.12s; }
+.content > *:nth-child(4) { animation-delay: 0.18s; }
+
+/* ---------- Card hover lift + glow ---------- */
+.card {
+  position: relative;
+  transition:
+    transform 0.2s cubic-bezier(0.21, 0.9, 0.35, 1),
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  border-color: #3d3d3d;
+  box-shadow:
+    0 10px 32px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* ---------- Lab card: live request scanline ---------- */
+.lab-card.running {
+  overflow: hidden;
+  border-color: var(--accent-border);
+}
+
+.lab-card.running::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.9), transparent);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.45);
+  animation: cardScan 1.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ---------- Response panel pop-in (every API hit) ---------- */
+.lab-result {
+  animation: popIn 0.38s cubic-bezier(0.21, 0.9, 0.35, 1) both;
+}
+
+.result-chip {
+  animation: chipFlash 0.9s ease-out;
+}
+
+@keyframes chipFlash {
+  0%  { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.45); }
+  100%{ box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); }
+}
+
+/* ---------- Busy button spinner ---------- */
+.btn-primary.is-busy {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.btn-primary.is-busy::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #ffffff;
+  animation: spin 0.7s linear infinite;
+}
+
+.btn-primary:hover:not(:disabled) {
+  box-shadow: 0 0 18px rgba(255, 255, 255, 0.14);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* ---------- Header pill: breathing status dot ---------- */
+.api-pill .status-dot {
+  animation: breathe 2.6s ease-in-out infinite;
+}
+
+/* ---------- Sidebar micro-interaction ---------- */
+.nav-item svg {
+  transition: transform 0.18s cubic-bezier(0.21, 0.9, 0.35, 1);
+}
+
+.nav-item:hover svg {
+  transform: translateX(2px) scale(1.1);
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .ambient::before {
+    display: none;
+  }
+}
+/* ---------- Key reveal pop (Part 9 issuer) ---------- */
+.key-reveal {
+  animation: popIn 0.38s cubic-bezier(0.21, 0.9, 0.35, 1) both;
+}
+
+.keys-table tbody tr {
+  animation: fadeUp 0.3s ease both;
+}

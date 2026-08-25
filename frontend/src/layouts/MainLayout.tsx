@@ -22,6 +22,7 @@ export function MainLayout() {
   return (
     <ServicesHealthProvider>
       <div className="app-shell">
+        <div className="ambient" aria-hidden="true" />
         <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div
           className={`scrim${sidebarOpen ? " visible" : ""}`}
