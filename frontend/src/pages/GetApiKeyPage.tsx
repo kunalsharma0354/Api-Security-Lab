@@ -171,22 +171,24 @@ export function GetApiKeyPage() {
         ) : keys.length === 0 ? (
           <p className="keys-note">No keys yet — generate your first one above.</p>
         ) : (
-          <table className="keys-table">
-            <thead>
-              <tr>
-                <th>Prefix</th>
-                <th>Created</th>
-              </tr>
-            </thead>
-            <tbody>
-              {keys.map((k) => (
-                <tr key={k.id}>
-                  <td><code className="key-prefix">{k.prefix}</code></td>
-                  <td>{new Date(k.createdAt).toLocaleTimeString()}</td>
+          <div className="table-wrap">
+            <table className="keys-table">
+              <thead>
+                <tr>
+                  <th>Prefix</th>
+                  <th>Created</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {keys.map((k) => (
+                  <tr key={k.id}>
+                    <td><code className="key-prefix">{k.prefix}</code></td>
+                    <td>{new Date(k.createdAt).toLocaleTimeString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
         <p className="keys-note">
           Only display prefixes live here — full secrets were never stored by
