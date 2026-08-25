@@ -43,8 +43,8 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   return (
     <aside className={`sidebar${open ? " open" : ""}`} aria-label="Main navigation">
       <div className="sidebar-brand">
-        <span className="brand-mark">
-          <Icon name="shield" size={16} />
+        <span className="brand-mark brand-logo" aria-hidden="true">
+          <img src="/nexora.png" alt="" width={20} height={20} />
         </span>
         <span className="brand-text">
           <span className="brand-name">NEXORA</span>

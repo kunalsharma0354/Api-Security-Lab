@@ -1,4 +1,4 @@
-import { Icon } from "./icons";
+
 import { useServicesHealth } from "../hooks/useServicesHealth";
 
 interface HeaderProps {
@@ -33,8 +33,8 @@ export function Header({ onMenuToggle }: HeaderProps) {
         </svg>
       </button>
 
-      <span className="brand-mark" aria-hidden="true">
-        <Icon name="shield" size={16} />
+      <span className="brand-mark brand-logo" aria-hidden="true">
+        <img src="/nexora.png" alt="" width={22} height={22} />
       </span>
       <span className="brand-text">
         <span className="brand-name">NEXORA</span>
