@@ -16,7 +16,7 @@ import type {
 } from "../types";
 
 const DEFAULT_LOCAL_API = "http://localhost:3001";
-const DEFAULT_DEPLOYED_API = "https://nexoralabbackend.vercel.app";
+const DEFAULT_DEPLOYED_API = "https://nexora-navy-omega.vercel.app";
 
 /**
  * API base URL resolution:
